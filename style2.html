@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LEX — Legal AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Mono:wght@300;400;500&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0d0c0a;--parchment:#f5f0e8;--cream:#faf7f2;
+  --gold:#c9a84c;--gold-light:#e8c97a;--rust:#8b2e0f;
+  --charcoal:#2a2825;--warm-gray:#6b6560;--border:#d4c9b5;
+  --shadow:rgba(13,12,10,0.12);--sw:268px;
+  /* FIX: dedicated vars for user bubble and input */
+  --user-bg:#2a2825;--user-text:#f5f0e8;
+  --input-bg:white;--input-color:#0d0c0a;
+}
+[data-theme="dark"]{
+  --ink:#f5f0e8;--parchment:#1a1815;--cream:#2a2520;
+  --gold:#e8c97a;--gold-light:#c9a84c;--rust:#ff6b4f;
+  --charcoal:#0d0c0a;--warm-gray:#aba599;--border:#3a3733;
+  --shadow:rgba(245,240,232,0.12);
+  /* FIX: user bubble becomes gold bg + dark text in dark mode */
+  --user-bg:#c9a84c;--user-text:#0d0c0a;
+  /* FIX: input gets dark background and light text */
+  --input-bg:#1f1d1a;--input-color:#f5f0e8;
+}
+[data-theme="dark"] .brand h1{color:#f5f0e8}
+[data-theme="dark"] .msg.ai .bbl{background:#2a2520}
+[data-theme="dark"] .tdots{background:#2a2520}
+[data-theme="dark"] .qb{background:#2a2520}
+[data-theme="dark"] #inp::placeholder{color:#5a5752}
+html,body{height:100%;background:var(--parchment);color:var(--ink);font-family:'DM Mono',monospace;overflow:hidden;transition:background-color .3s,color .3s}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.35}
+.shell{display:flex;height:100vh}
+
+/* ── Sidebar ── */
+.sidebar{width:var(--sw);min-width:var(--sw);background:var(--charcoal);display:flex;flex-direction:column;border-right:1px solid #3a3733;overflow:hidden;transition:width .28s,min-width .28s}
+.sidebar.off{width:0;min-width:0}
+.brand{padding:24px 20px 16px;border-bottom:1px solid #3a3733;flex-shrink:0}
+.brand-badge{display:inline-flex;align-items:center;gap:6px;background:var(--gold);color:var(--charcoal);padding:3px 9px;border-radius:2px;font-size:9px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;margin-bottom:9px}
+.brand h1{font-family:'Playfair Display',serif;font-size:29px;font-weight:900;color:var(--parchment);letter-spacing:-.02em;line-height:1}
+.brand h1 span{color:var(--gold)}
+.brand p{font-size:10px;color:#5e5c59;letter-spacing:.05em;margin-top:3px;text-transform:uppercase}
+.nb{margin:12px 12px 4px;background:transparent;border:1px solid #4a4744;color:#aaa8a2;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.07em;padding:9px 13px;border-radius:3px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;text-transform:uppercase;width:calc(100% - 24px)}
+.nb:hover{border-color:var(--gold);color:var(--gold);background:rgba(201,168,76,.05)}
+.sl{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#bfbab3;padding:13px 18px 5px;flex-shrink:0}
+.cl{flex:1;overflow-y:auto;padding:0 7px 7px;scrollbar-width:thin;scrollbar-color:#3a3733 transparent}
+.ci{padding:8px 11px;border-radius:3px;cursor:pointer;transition:background .15s;margin-bottom:1px;position:relative}
+.ci:hover{background:rgba(255,255,255,.04)}
+.ci.on{background:rgba(201,168,76,.1)}
+.ci .ct{font-size:11px;color:#bfbab3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4}
+.ci.on .ct{color:var(--gold-light)}
+.ci .cm{font-size:9px;color:#4e4c49;margin-top:2px}
+.ci .cx{position:absolute;right:9px;top:50%;transform:translateY(-50%);opacity:0;background:transparent;border:none;color:#6a6760;cursor:pointer;padding:2px;transition:opacity .15s,color .15s;line-height:0}
+.ci:hover .cx{opacity:1}.ci .cx:hover{color:#e05555}
+.sf{padding:13px;border-top:1px solid #3a3733;flex-shrink:0}
+.pa{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.pt{font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:#7a7570;border:1px solid #3a3733;padding:3px 7px;border-radius:2px;cursor:pointer;transition:all .15s}
+.pt:hover,.pt.on{color:var(--gold);border-color:var(--gold);background:rgba(201,168,76,.07)}
+
+/* ── Main ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;width:100%}
+.hdr{padding:0 26px;height:58px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--cream);flex-shrink:0;z-index:10}
+.hl{display:flex;align-items:center;gap:11px}
+.tog{background:transparent;border:1px solid var(--border);color:var(--warm-gray);width:30px;height:30px;border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.tog:hover{border-color:var(--gold);color:var(--gold)}
+.sd{display:none}
+#chatTitle{display:none}
+@keyframes pl{0%,100%{box-shadow:0 0 0 3px rgba(76,175,122,.2)}50%{box-shadow:0 0 0 6px rgba(76,175,122,.07)}}
+.hdr h2{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-.01em}
+.hr{display:flex;align-items:center;gap:7px}
+.hb{background:transparent;border:1px solid var(--border);color:var(--warm-gray);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.07em;padding:6px 11px;border-radius:2px;cursor:pointer;text-transform:uppercase;transition:all .15s;display:flex;align-items:center;gap:5px}
+.hb:hover{border-color:var(--gold);color:var(--gold)}
+.hb.red:hover{border-color:#e05555;color:#e05555}
+
+/* ── Messages ── */
+.msgs{flex:1;overflow-y:auto;padding:26px 30px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;background:var(--cream);position:relative}
+.msgs::before{content:'§';position:fixed;right:40px;top:50%;transform:translateY(-50%);font-family:'Playfair Display',serif;font-size:280px;color:rgba(201,168,76,.03);pointer-events:none;z-index:0;line-height:1;user-select:none}
+.welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;position:relative;z-index:1;animation:fu .5s ease both}
+@keyframes fu{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.ws{width:64px;height:64px;border:2px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:20px;position:relative}
+.ws::before{content:'';position:absolute;inset:5px;border:1px solid rgba(201,168,76,.33);border-radius:50%}
+.ws svg{color:var(--gold)}
+.welcome h2{font-family:'Playfair Display',serif;font-size:32px;font-weight:900;color:var(--ink);letter-spacing:-.02em;margin-bottom:7px}
+.welcome h2 em{color:var(--gold);font-style:italic}
+.welcome p{font-size:12px;color:var(--warm-gray);letter-spacing:.03em;line-height:1.75;max-width:400px;margin-bottom:28px}
+.qg{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;max-width:490px;width:100%}
+.qb{background:white;border:1px solid var(--border);border-radius:4px;padding:12px 14px;text-align:left;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.qb::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold);transform:scaleY(0);transform-origin:bottom;transition:transform .2s}
+.qb:hover{border-color:var(--gold);box-shadow:0 4px 14px var(--shadow);transform:translateY(-1px)}
+.qb:hover::before{transform:scaleY(1)}
+.qi{font-size:16px;margin-bottom:4px}
+.qt{font-family:'Libre Baskerville',serif;font-size:12px;color:var(--ink);font-weight:700;line-height:1.3}
+.qs{font-size:10px;color:var(--warm-gray);margin-top:2px}
+
+/* Message bubbles */
+.msg{display:flex;gap:11px;margin-bottom:20px;position:relative;z-index:1;animation:mi .3s cubic-bezier(.16,1,.3,1) both}
+@keyframes mi{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+.msg.user{flex-direction:row-reverse}
+.av{width:33px;height:33px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700}
+.msg.ai .av{background:var(--charcoal);border:1.5px solid var(--gold);color:var(--gold);font-family:'Playfair Display',serif;font-size:15px;font-style:italic}
+.msg.user .av{background:var(--gold);color:var(--charcoal);font-family:'DM Mono',monospace;font-size:11px}
+.mb{max-width:66%}
+.mm{font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:var(--warm-gray);margin-bottom:5px}
+.msg.user .mm{text-align:right}
+.bbl{padding:12px 16px;border-radius:4px;font-size:13px;line-height:1.72;position:relative}
+.msg.ai .bbl{background:white;border:1px solid var(--border);color:var(--ink);border-top-left-radius:0;box-shadow:0 2px 8px var(--shadow)}
+.msg.ai .bbl::before{content:'';position:absolute;top:0;left:-1px;width:3px;height:36px;background:var(--gold);border-radius:0 0 2px 2px}
+/* FIX: use CSS vars so dark mode overrides work */
+.msg.user .bbl{background:var(--user-bg);color:var(--user-text);border-top-right-radius:0;font-size:12px}
+.bbl strong{font-family:'Libre Baskerville',serif;color:var(--rust)}
+.cit{display:inline-block;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);color:#7a5c1e;font-size:10px;padding:1px 6px;border-radius:2px;font-family:'DM Mono',monospace;margin:0 2px;cursor:pointer;transition:background .15s}
+.cit:hover{background:rgba(201,168,76,.22)}
+.disc{margin-top:8px;padding:7px 10px;background:rgba(139,46,15,.06);border-left:2px solid var(--rust);border-radius:0 3px 3px 0;font-size:10px;color:var(--rust);font-style:italic;letter-spacing:.02em}
+.msg-actions{display:flex;gap:6px;margin-top:6px;opacity:0;transition:opacity .15s}
+.msg:hover .msg-actions{opacity:1}
+.msg.user .msg-actions{justify-content:flex-end}
+.ma{background:transparent;border:1px solid var(--border);color:var(--warm-gray);font-size:9px;font-family:'DM Mono',monospace;padding:3px 8px;border-radius:2px;cursor:pointer;letter-spacing:.05em;transition:all .15s}
+.ma:hover{border-color:var(--gold);color:var(--gold)}
+
+/* Typing */
+.typing{display:flex;gap:11px;margin-bottom:20px;z-index:1}
+.tav{width:33px;height:33px;border-radius:50%;background:var(--charcoal);border:1.5px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:var(--gold);flex-shrink:0}
+.tdots{background:white;border:1px solid var(--border);border-top-left-radius:0;border-radius:4px;padding:14px 18px;display:flex;align-items:center;gap:5px}
+.tdots span{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:bn 1.2s infinite}
+.tdots span:nth-child(2){animation-delay:.2s}.tdots span:nth-child(3){animation-delay:.4s}
+@keyframes bn{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-5px);opacity:1}}
+
+/* Input */
+.ia{padding:10px 20px 12px;background:var(--cream);border-top:1px solid var(--border);flex-shrink:0;box-sizing:border-box;overflow:hidden;width:100%}
+.ia-inner{max-width:660px;margin:0 auto;width:100%}
+/* FIX: background uses var so it darkens in dark mode */
+.ib{display:flex;gap:7px;align-items:center;background:var(--input-bg);border:1px solid var(--border);border-radius:25px;padding:6px 12px;transition:border-color .2s,box-shadow .2s;box-shadow:0 2px 8px var(--shadow)}
+.ib:focus-within{border-color:var(--gold);box-shadow:0 2px 16px rgba(201,168,76,.13)}
+
+
+.ii{color:var(--warm-gray);flex-shrink:0}
+#inp{flex:1;border:none;outline:none;background:transparent;font-family:'DM Mono',monospace;font-size:12px;color:var(--input-color);resize:none;line-height:1.4;height:18px;min-height:18px;max-height:18px;overflow:hidden}
+#inp::placeholder{color:#bcb8b2}
+.sb{background:var(--ink);border:none;color:var(--parchment);width:30px;height:30px;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.sb:hover{background:var(--gold);color:var(--charcoal)}.sb:active{transform:scale(.93)}.sb:disabled{opacity:.35;cursor:default}
+.ibar{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+.tr{display:flex;gap:5px}
+.tb{background:transparent;border:1px solid var(--border);color:var(--warm-gray);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.07em;text-transform:uppercase;padding:5px 9px;border-radius:2px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px}
+.tb:hover{border-color:var(--gold);color:var(--gold)}.tb.on{border-color:var(--gold);color:var(--gold);background:rgba(201,168,76,.07)}
+.cc{font-size:9px;color:#b0aca6;text-align:right;margin-top:4px;letter-spacing:.04em}.cc.w{color:var(--rust)}
+.hint{font-size:9px;color:#bbb8b2;letter-spacing:.03em}.hint kbd{border:1px solid var(--border);border-radius:2px;padding:1px 4px;font-family:'DM Mono',monospace;background:var(--parchment)}
+
+/* Toast */
+.toast{position:fixed;bottom:86px;right:28px;background:var(--charcoal);color:var(--gold);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.07em;padding:8px 15px;border-radius:3px;border:1px solid #4a4744;opacity:0;transform:translateY(8px);transition:all .22s;pointer-events:none;z-index:100}
+.toast.on{opacity:1;transform:translateY(0)}
+
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+    <div class="brand-badge">
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      Legal AI
+    </div>
+    <h1>L<span>e</span>x</h1>
+    <p>Constitutional Law Engine v4</p>
+  </div>
+
+  <button class="nb" onclick="newChat()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    New Consultation
+  </button>
+
+  <div class="sl">Recent Matters</div>
+  <div class="cl" id="chatList"></div>
+
+  <div class="sf">
+    <button class="nb" onclick="toggleDarkMode()" style="margin-top:auto">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      Dark/Light Mode
+    </button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <header class="hdr">
+    <div class="hl">
+      <button class="tog" onclick="toggleSB()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="sd"></div>
+      <h2 id="chatTitle">New Consultation</h2>
+    </div>
+    <div class="hr">
+      <button class="hb" onclick="copyChat()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copy
+      </button>
+    </div>
+  </header>
+
+  <div class="msgs" id="msgs"></div>
+
+  <div class="ia">
+    <div class="ia-inner">
+      <div class="ib">
+        <div class="ii"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        <textarea id="inp" rows="1" placeholder="Describe your legal question…" oninput="onIn()" onkeydown="onKey(event)"></textarea>
+        <button class="sb" id="sb" onclick="send()" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const MAX = 1000;
+let chats = [];
+let aid = null;
+let tools = {};
+let sbOn = true;
+let ri = 0;
+
+try { chats = JSON.parse(localStorage.getItem('lex_chats') || '[]'); } catch(e){ chats=[]; }
+
+const RS = [
+  { t:`<strong>Breach of Contract — Four Essential Elements</strong><br><br>To succeed on a breach of contract claim, the plaintiff must establish:<br><br><strong>1. Valid Contract</strong> — Offer, acceptance, consideration, and legal capacity. <span class="cit">Restatement (Second) § 17</span><br><br><strong>2. Plaintiff's Performance</strong> — The claimant must show they performed obligations, or had a legally excused reason not to.<br><br><strong>3. Defendant's Breach</strong> — A material breach substantially deprives the non-breaching party of the bargained-for benefit. <span class="cit">Jacob & Youngs v. Kent (1921)</span><br><br><strong>4. Resulting Damages</strong> — Losses must be actual and foreseeable at time of contracting. <span class="cit">Hadley v. Baxendale (1854)</span><br><br><strong>Remedies:</strong> compensatory damages, consequential damages, specific performance, or rescission.`, d:true },
+  { t:`<strong>GDPR Breach Notification — Art. 33 & 34</strong><br><br>A SaaS data controller faces a two-tier regime on discovering a personal data breach:<br><br><strong>Supervisory Authority (Art. 33)</strong><br>Notification within <strong>72 hours</strong> of awareness. Must include: nature of breach, data categories, number of subjects, DPO contact, likely consequences, and mitigation steps. <span class="cit">GDPR Art. 33(1)</span><br><br><strong>Data Subjects (Art. 34)</strong><br>Required only when the breach poses a <em>high risk</em> to individual rights — identity theft, financial harm, discrimination. Communication must use plain language. <span class="cit">GDPR Art. 34(1)</span><br><br><strong>Exemption:</strong> Subject notification is waived if encryption/pseudonymisation was applied, or if individual contact would require disproportionate effort.`, d:false },
+  { t:`<strong>Non-Compete Enforceability — Reasonableness Standard</strong><br><br>Courts apply a <strong>three-part reasonableness test</strong>: <span class="cit">Hopper v. All Pet Animal Clinic (1993)</span><br><br><strong>1. Legitimate Business Interest</strong> — Protectable trade secrets, confidential client relationships, or proprietary training. Competition alone is insufficient.<br><br><strong>2. Temporal Scope</strong> — Clauses exceeding 1–2 years are frequently voided. Courts in NY and DE have struck down restrictions beyond 18 months absent exceptional circumstances.<br><br><strong>3. Geographic & Functional Scope</strong> — Limited to areas where the employer actually operates. National bans for regional employees are routinely unenforceable.<br><br><strong>Note:</strong> California <span class="cit">Bus. & Prof. Code § 16600</span>, Minnesota, and North Dakota <strong>ban non-competes entirely</strong>.`, d:true },
+  { t:`<strong>IP Ownership in Freelance Arrangements</strong><br><br>Default under U.S. copyright: <strong>the creator owns the work</strong> unless a specific exception applies. <span class="cit">17 U.S.C. § 201(a)</span><br><br><strong>Work-for-Hire Doctrine (§ 101)</strong><br>For independent contractors, a work qualifies only if: (1) it falls within one of nine enumerated categories AND (2) a <strong>written agreement</strong> expressly designates it as work-for-hire. <span class="cit">CCNV v. Reid (1989)</span><br><br><strong>Software — The Grey Zone</strong><br>Custom code typically does <em>not</em> fall within the nine categories. Without an explicit assignment clause, the contractor retains copyright and grants only an implied license.<br><br><strong>Best practice:</strong> Insist on a separate <strong>IP Assignment Agreement</strong> with a broad assignment clause and moral rights waiver.`, d:false }
+];
+
+function uid(){ return 'c'+Date.now()+Math.random().toString(36).slice(2,6) }
+function save(){ try{ localStorage.setItem('lex_chats', JSON.stringify(chats)) }catch(e){} }
+function gc(id){ return chats.find(c=>c.id===id) }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+function rt(ts){ const d=Date.now()-ts; if(d<60000)return'Just now'; if(d<3600000)return Math.floor(d/60000)+'m ago'; if(d<86400000)return Math.floor(d/3600000)+'h ago'; return Math.floor(d/86400000)+'d ago' }
+
+function renderList(){
+  const el=document.getElementById('chatList');
+  el.innerHTML='';
+  chats.forEach(c=>{
+    const d=document.createElement('div');
+    d.className='ci'+(c.id===aid?' on':'');
+    d.dataset.id=c.id;
+    d.innerHTML=`<div class="ct">${esc(c.title)}</div><div class="cm">${rt(c.ts)} · ${c.msgs.filter(m=>m.r==='user').length} msgs</div><button class="cx" onclick="event.stopPropagation();delChat('${c.id}')" title="Delete"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
+    d.onclick=()=>loadChat(c.id);
+    el.appendChild(d);
+  });
+}
+
+function newChat(){
+  const c={id:uid(),title:'New Consultation',msgs:[],ts:Date.now()};
+  chats.unshift(c); save(); renderList(); loadChat(c.id);
+}
+
+function loadChat(id){
+  aid=id;
+  const c=gc(id);
+  if(!c)return;
+  document.getElementById('chatTitle').textContent=c.title;
+  const el=document.getElementById('msgs');
+  el.innerHTML='';
+  if(c.msgs.length===0){ el.innerHTML=wHTML(); }
+  else{ c.msgs.forEach(m=>addBubble(m.r,m.t,m.d,false)); el.scrollTop=el.scrollHeight; }
+  document.querySelectorAll('.ci').forEach(e=>e.classList.toggle('on',e.dataset.id===id));
+}
+
+function delChat(id){
+  chats=chats.filter(c=>c.id!==id); save();
+  if(aid===id){ chats.length>0?loadChat(chats[0].id):newChat(); }
+  renderList();
+}
+function deleteChat(){ if(aid)delChat(aid) }
+function clearChat(){
+  const c=gc(aid);if(!c)return;
+  c.msgs=[];c.title='New Consultation';save();renderList();loadChat(aid);
+}
+
+function wHTML(){
+  return`<div class="welcome" id="welcome">
+  <div class="ws"><svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><path d="M12 11v4M12 8h.01"/></svg></div>
+  <h2>Your <em>legal</em> counsel,<br/>always available.</h2>
+  <p>Ask anything — from contract analysis to case strategy. Precise, cited answers drawn from statutes and case law.</p>
+</div>`;
+}
+
+function addBubble(role,text,disc,animate){
+  const el=document.getElementById('msgs');
+  const now=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  const d=document.createElement('div');
+  d.className=`msg ${role}`;
+  if(!animate)d.style.animation='none';
+  const copyTxt=text.replace(/<[^>]+>/g,'');
+  d.innerHTML=`
+    <div class="av">${role==='user'?'You':'L'}</div>
+    <div class="mb">
+      <div class="mm">${role==='user'?'You':'Lex AI'} · ${now}</div>
+      <div class="bbl">${text}${disc?`<div class="disc">⚠ Informational only — not legal advice. Consult a licensed attorney for jurisdiction-specific guidance.</div>`:''}</div>
+      <div class="msg-actions">
+        <button class="ma" onclick="copyText(\`${copyTxt.replace(/`/g,"'")}\`)">Copy</button>
+        ${role==='ai'?'<button class="ma" onclick="regen(this)">Regenerate</button>':''}
+      </div>
+    </div>`;
+  el.appendChild(d);
+  el.scrollTop=el.scrollHeight;
+}
+
+function showTyping(){
+  const el=document.getElementById('msgs');
+  const d=document.createElement('div');
+  d.className='typing';d.id='typ';
+  d.innerHTML=`<div class="tav">L</div><div class="tdots"><span></span><span></span><span></span></div>`;
+  el.appendChild(d);el.scrollTop=el.scrollHeight;
+}
+function hideTyping(){ const t=document.getElementById('typ');if(t)t.remove() }
+
+function send(){
+  const inp=document.getElementById('inp');
+  const txt=inp.value.trim();if(!txt)return;
+  const c=gc(aid);if(!c)return;
+  const w=document.getElementById('welcome');
+  if(w){w.style.transition='opacity .22s,transform .22s';w.style.opacity='0';w.style.transform='translateY(-10px)';setTimeout(()=>w.remove(),230)}
+  const toolTags=Object.entries(tools).filter(([,v])=>v).map(([k])=>`<span class="cit">${k==='cl'?'Case Law':k==='st'?'Statute':'Draft Mode'}</span>`).join(' ');
+  const userText=esc(txt)+(toolTags?` ${toolTags}`:'');
+  c.msgs.push({r:'user',t:userText,d:false});
+  if(c.title==='New Consultation'){ c.title=txt.slice(0,36)+(txt.length>36?'…':''); document.getElementById('chatTitle').textContent=c.title; }
+  save();addBubble('user',userText,false,true);
+  inp.value='';
+  document.getElementById('cc').textContent='0 / '+MAX;
+  document.getElementById('sb').disabled=true;
+  renderList();showTyping();
+  setTimeout(()=>{
+    hideTyping();
+    const r=RS[ri%RS.length];ri++;
+    c.msgs.push({r:'ai',t:r.t,d:r.d});save();
+    addBubble('ai',r.t,r.d,true);renderList();
+  },1100+Math.random()*700);
+}
+
+function quickSend(t){ document.getElementById('inp').value=t;onIn();send() }
+
+function regen(btn){
+  const c=gc(aid);if(!c)return;
+  const lastAi=c.msgs.map((m,i)=>({...m,i})).filter(m=>m.r==='ai').pop();
+  if(!lastAi)return;
+  const newR=RS[ri%RS.length];ri++;
+  c.msgs[lastAi.i]={r:'ai',t:newR.t,d:newR.d};save();
+  loadChat(aid);
+}
+
+function onIn(){
+  const inp=document.getElementById('inp');
+  // fixed size — no auto-resize
+  document.getElementById('sb').disabled=inp.value.trim().length===0;
+}
+function onKey(e){ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()} }
+function toggleTool(k,bid){ tools[k]=!tools[k];document.getElementById(bid).classList.toggle('on',tools[k]) }
+function toggleSB(){ sbOn=!sbOn;document.getElementById('sidebar').classList.toggle('off',!sbOn) }
+
+function toggleDarkMode(){
+  const html=document.documentElement;
+  const isDark=html.getAttribute('data-theme')==='dark';
+  html.setAttribute('data-theme', isDark?'light':'dark');
+  localStorage.setItem('lex_theme', isDark?'light':'dark');
+}
+
+function filterPA(el){
+  el.classList.toggle('on');
+  const active=[...document.querySelectorAll('.pt.on')].map(t=>t.textContent.toLowerCase());
+  document.querySelectorAll('.ci').forEach(ci=>{
+    ci.style.opacity=active.length===0||active.some(a=>ci.querySelector('.ct').textContent.toLowerCase().includes(a))?'1':'0.28';
+  });
+}
+
+function copyChat(){
+  const c=gc(aid);if(!c||c.msgs.length===0)return toast('Nothing to copy');
+  const txt=c.msgs.map(m=>`[${m.r==='user'?'You':'Lex AI'}]\n${m.t.replace(/<[^>]+>/g,'')}`).join('\n\n');
+  navigator.clipboard.writeText(txt).then(()=>toast('Chat copied!')).catch(()=>toast('Copy failed'));
+}
+function copyText(t){ navigator.clipboard.writeText(t).then(()=>toast('Copied!')).catch(()=>toast('Failed')) }
+
+function toast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');
+  clearTimeout(t._tid);t._tid=setTimeout(()=>t.classList.remove('on'),2200);
+}
+
+// Initialize theme
+const savedTheme=localStorage.getItem('lex_theme')||'light';
+document.documentElement.setAttribute('data-theme',savedTheme);
+
+// Boot
+if(chats.length===0)newChat();else{ renderList();loadChat(chats[0].id); }
+</script>
+</body>
+</html>
