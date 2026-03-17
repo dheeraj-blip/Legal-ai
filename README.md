@@ -290,13 +290,11 @@ Improvements welcome! Consider:
 - Enhancing response formatting
 - Adding test cases
 
-## License
 
-[Add your license information here]
 
 ## Support
 
-For questions or issues about this project, please refer to the inline code documentation or contact the project maintainer.
+For questions or issues about this project, please refer to the inline code documentation.
 
 ---
 
