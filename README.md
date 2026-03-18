@@ -9,10 +9,10 @@ The Indian Law Query Assistant uses CrewAI's multi-agent architecture to handle 
 **Key Features:**
 - 🏛️ Multi-domain legal expertise (23+ legal areas)
 - 🤖 AI-powered query routing and responses
-- 📚 Comprehensive coverage of Indian legal codes and acts
-- ⚖️ Accurate section/article-level citations
-- 💬 Interactive and command-line interfaces
-- 🌐 Flask-based web API capabilities
+- 📚 Comprehensive coverage of Indian legal codes, acts, and Supreme Court cases
+- ⚖️ Accurate section/article-level citations with case-law support
+- 💬 Interactive CLI and rich web chat interface
+- 🌐 Flask-based JSON API for programmatic access
 
 ## Legal Domains Covered
 
@@ -41,21 +41,27 @@ The Indian Law Query Assistant uses CrewAI's multi-agent architecture to handle 
 | Property Law | `prop.json` | Real and personal property rights |
 | Tax Law | `tax.json` | Income tax and taxation regulations |
 | Trademark Law | `trademarks.json` | Trademark protection and registration |
+| Supreme Court Cases | `supreme_court_cases.json` | Summaries of landmark Supreme Court of India judgments |
 
 ## Project Structure
 
 ```
 legal/
-├── main.py                 # Entry point (interactive and CLI modes)
-├── agents.py              # Agent definitions for all legal domains
-├── crew.py                # CrewAI crew configuration and orchestration
-├── tasks.py               # Task definitions for each specialist
-├── tools.py               # Custom search tools for each legal domain
-├── pyproject.toml         # Project metadata and dependencies
-├── requirements.txt       # Python package requirements
-├── *.json                 # Legal data files (constitution, codes, acts)
-├── style2.html            # HTML styling for web interface
-└── .env                   # Environment configuration (not tracked)
+├── main.py                  # Entry point (interactive and CLI modes)
+├── app.py                   # Flask app serving web UI + /api/chat
+├── index.html               # Web chat UI markup (LEX — Legal AI)
+├── style.css                # Web UI styling
+├── app.js                   # Frontend chat logic (calls /api/chat)
+├── agents.py                # Agent definitions for all legal domains
+├── crew.py                  # CrewAI crew configuration and orchestration + API key failover
+├── tasks.py                 # Task definitions for each specialist
+├── tools.py                 # Custom search tools for each legal domain
+├── supreme_court_cases.json # Supreme Court of India case summaries
+├── legal-data-extractor/    # Scripts to build/update the case-law dataset
+├── pyproject.toml           # Project metadata and dependencies
+├── requirements.txt         # Python package requirements
+├── *.json                   # Legal data files (constitution, codes, acts)
+└── .env                     # Environment configuration (not tracked)
 ```
 
 ## Installation
@@ -88,14 +94,21 @@ legal/
    ```
 
 4. **Configure environment variables:**
-   Create a `.env` file with necessary API keys (if using external LLM services):
+   Create a `.env` file with necessary API keys (if using external LLM services).  
+   The assistant supports **automatic failover across up to 3 keys**, so you can paste multiple keys for reliability:
    ```
-   OPENAI_API_KEY=your_key_here
+   OPENAI_API_BASE=https://api.groq.com/openai/v1
+   OPENAI_API_KEY=your_primary_key_here
+   OPENAI_API_key=your_backup_key_here
+   GROQ_API_KEY_1=third_fallback_key_here
+   OPENAI_MODEL_NAME=llama-3.3-70b-versatile
+   CREWAI_TRACING_DISABLED=true
+   CREWAI_TELEMETRY_DISABLED=true
    ```
 
 ## Usage
 
-### Interactive Mode
+### Interactive Mode (CLI)
 
 Run the assistant in interactive mode to ask multiple questions:
 
@@ -105,7 +118,7 @@ python main.py
 
 This launches an interactive CLI where you can enter questions continuously. Type `quit` or `exit` to exit.
 
-### Single Query Mode
+### Single Query Mode (CLI)
 
 Ask a single question directly from the command line:
 
@@ -118,6 +131,16 @@ python main.py "What are the fundamental rights under the Indian Constitution?"
 - **Interactive**: `python main.py` - Start interactive mode
 - **Single Query**: `python main.py "your question"` - Direct query
 - **Start Script**: `start` - Uses the entry point defined in pyproject.toml
+
+### Web Chat Interface
+
+Run the Flask web interface and talk to the assistant in the browser:
+
+```bash
+python app.py
+```
+
+Then open `http://localhost:5000` and use the LEX UI for a modern, chat-style legal assistant experience.
 
 ## How It Works
 
@@ -166,13 +189,14 @@ Each legal domain has:
 ### Environment Variables
 - `CREWAI_INTERACTIVE_MODE` - Set to "false" for non-interactive execution
 - `CREWAI_DISABLE_TELEMETRY` - Set to "true" to opt-out of telemetry
-- `OPENAI_API_KEY` - API key for LLM services (if applicable)
+- `OPENAI_API_KEY`, `OPENAI_API_key`, `GROQ_API_KEY_1` - API keys for LLM services (the system will automatically rotate between them on failures)
 
 ### CrewAI Settings
 Agents are configured with:
 - `max_iter=3` - Maximum iterations per agent
 - `verbose=False` - Suppress verbose output
 - Custom backstories and goals
+- Automatic API-key failover at the crew level for more robust inference
 
 ## Example Queries
 
