@@ -1126,3 +1126,70 @@ class TrademarkLawSearchTool(BaseTool):
             if len(desc) > 500: desc = desc[:500] + "..."
             output += f"--- {sec.get('title', '')}: {sec.get('section', '')} ---\n{desc}\n\n"
         return output
+
+
+class SupremeCourtCaseSearchTool(BaseTool):
+    """Tool to search Supreme Court cases from supreme_court_cases.json."""
+
+    name: str = "SupremeCourtCaseSearchTool"
+    description: str = (
+        "Searches the Supreme Court cases database (supreme_court_cases.json) for cases "
+        "related to a query. Input should be keywords describing the legal issue. "
+        "Returns matching cases with their case name, year, and summary. "
+        "Use this tool to find relevant Supreme Court precedents and landmark judgments "
+        "that relate to the user's question."
+    )
+    data_path: str = Field(default="supreme_court_cases.json", description="Path to supreme_court_cases.json")
+
+    _cache: ClassVar[Dict[str, List[Dict[str, Any]]]] = {}
+
+    def _load_data(self) -> list:
+        """Load and cache the JSON data. Only reads from disk on first call."""
+        json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), self.data_path)
+        if json_path not in self._cache:
+            with open(json_path, "r", encoding="utf-8") as f:
+                self._cache[json_path] = json.load(f)
+        return self._cache[json_path]
+
+    def _run(self, query: str) -> str:
+        """Search supreme_court_cases.json for cases matching the query."""
+        try:
+            cases = self._load_data()
+        except FileNotFoundError:
+            return "Error: Could not find supreme_court_cases.json"
+        except json.JSONDecodeError:
+            return "Error: Could not parse supreme_court_cases.json"
+
+        keywords = query.lower().split()
+        results = []
+
+        for case in cases:
+            summary = (case.get("summary") or "").lower()
+            case_id = (case.get("case_id") or "").lower().replace("_", " ")
+            searchable = f"{case_id} {summary}"
+
+            # Score: how many keywords match
+            score = sum(1 for kw in keywords if kw in searchable)
+
+            if score > 0:
+                results.append((score, case))
+
+        # Sort by relevance (highest score first), take top 3
+        results.sort(key=lambda x: x[0], reverse=True)
+        top_results = results[:3]
+
+        if not top_results:
+            return f"No Supreme Court cases found matching: '{query}'. Try different keywords."
+
+        output = f"Found {len(top_results)} relevant Supreme Court cases:\n\n"
+        for _score, case in top_results:
+            case_name = (case.get("case_id") or "Unknown").replace("_", " ").replace(".PDF", "").replace("  ", " ")
+            year = case.get("year") or "Year unknown"
+            summary = case.get("summary") or "No summary available."
+            # Truncate long summaries
+            if len(summary) > 600:
+                summary = summary[:600] + "..."
+            output += f"--- {case_name} ({year}) ---\n{summary}\n\n"
+
+        return output
+

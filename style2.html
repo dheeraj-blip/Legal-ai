@@ -214,6 +214,12 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
       </div>
+      <div class="ibar">
+        <div class="hint">
+          Press <kbd>Enter</kbd> to send · <kbd>Shift</kbd>+<kbd>Enter</kbd> for new line
+        </div>
+        <div class="cc" id="cc">0 / 1000</div>
+      </div>
     </div>
   </div>
 </main>
@@ -227,22 +233,15 @@ let chats = [];
 let aid = null;
 let tools = {};
 let sbOn = true;
-let ri = 0;
 
 try { chats = JSON.parse(localStorage.getItem('lex_chats') || '[]'); } catch(e){ chats=[]; }
-
-const RS = [
-  { t:`<strong>Breach of Contract — Four Essential Elements</strong><br><br>To succeed on a breach of contract claim, the plaintiff must establish:<br><br><strong>1. Valid Contract</strong> — Offer, acceptance, consideration, and legal capacity. <span class="cit">Restatement (Second) § 17</span><br><br><strong>2. Plaintiff's Performance</strong> — The claimant must show they performed obligations, or had a legally excused reason not to.<br><br><strong>3. Defendant's Breach</strong> — A material breach substantially deprives the non-breaching party of the bargained-for benefit. <span class="cit">Jacob & Youngs v. Kent (1921)</span><br><br><strong>4. Resulting Damages</strong> — Losses must be actual and foreseeable at time of contracting. <span class="cit">Hadley v. Baxendale (1854)</span><br><br><strong>Remedies:</strong> compensatory damages, consequential damages, specific performance, or rescission.`, d:true },
-  { t:`<strong>GDPR Breach Notification — Art. 33 & 34</strong><br><br>A SaaS data controller faces a two-tier regime on discovering a personal data breach:<br><br><strong>Supervisory Authority (Art. 33)</strong><br>Notification within <strong>72 hours</strong> of awareness. Must include: nature of breach, data categories, number of subjects, DPO contact, likely consequences, and mitigation steps. <span class="cit">GDPR Art. 33(1)</span><br><br><strong>Data Subjects (Art. 34)</strong><br>Required only when the breach poses a <em>high risk</em> to individual rights — identity theft, financial harm, discrimination. Communication must use plain language. <span class="cit">GDPR Art. 34(1)</span><br><br><strong>Exemption:</strong> Subject notification is waived if encryption/pseudonymisation was applied, or if individual contact would require disproportionate effort.`, d:false },
-  { t:`<strong>Non-Compete Enforceability — Reasonableness Standard</strong><br><br>Courts apply a <strong>three-part reasonableness test</strong>: <span class="cit">Hopper v. All Pet Animal Clinic (1993)</span><br><br><strong>1. Legitimate Business Interest</strong> — Protectable trade secrets, confidential client relationships, or proprietary training. Competition alone is insufficient.<br><br><strong>2. Temporal Scope</strong> — Clauses exceeding 1–2 years are frequently voided. Courts in NY and DE have struck down restrictions beyond 18 months absent exceptional circumstances.<br><br><strong>3. Geographic & Functional Scope</strong> — Limited to areas where the employer actually operates. National bans for regional employees are routinely unenforceable.<br><br><strong>Note:</strong> California <span class="cit">Bus. & Prof. Code § 16600</span>, Minnesota, and North Dakota <strong>ban non-competes entirely</strong>.`, d:true },
-  { t:`<strong>IP Ownership in Freelance Arrangements</strong><br><br>Default under U.S. copyright: <strong>the creator owns the work</strong> unless a specific exception applies. <span class="cit">17 U.S.C. § 201(a)</span><br><br><strong>Work-for-Hire Doctrine (§ 101)</strong><br>For independent contractors, a work qualifies only if: (1) it falls within one of nine enumerated categories AND (2) a <strong>written agreement</strong> expressly designates it as work-for-hire. <span class="cit">CCNV v. Reid (1989)</span><br><br><strong>Software — The Grey Zone</strong><br>Custom code typically does <em>not</em> fall within the nine categories. Without an explicit assignment clause, the contractor retains copyright and grants only an implied license.<br><br><strong>Best practice:</strong> Insist on a separate <strong>IP Assignment Agreement</strong> with a broad assignment clause and moral rights waiver.`, d:false }
-];
 
 function uid(){ return 'c'+Date.now()+Math.random().toString(36).slice(2,6) }
 function save(){ try{ localStorage.setItem('lex_chats', JSON.stringify(chats)) }catch(e){} }
 function gc(id){ return chats.find(c=>c.id===id) }
-function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>') }
 function rt(ts){ const d=Date.now()-ts; if(d<60000)return'Just now'; if(d<3600000)return Math.floor(d/60000)+'m ago'; if(d<86400000)return Math.floor(d/3600000)+'h ago'; return Math.floor(d/86400000)+'d ago' }
+
 
 function renderList(){
   const el=document.getElementById('chatList');
@@ -323,7 +322,30 @@ function showTyping(){
 }
 function hideTyping(){ const t=document.getElementById('typ');if(t)t.remove() }
 
-function send(){
+async function callApi(question){
+  const payload = { query: question };
+  const res = await fetch('/api/chat', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  });
+  if(!res.ok){
+    let msg = 'Server error';
+    try{
+      const data = await res.json();
+      msg = data.error || msg;
+    }catch(e){}
+    throw new Error(msg);
+  }
+  const data = await res.json();
+  if(data.error) throw new Error(data.error);
+  return {
+    text: esc(data.response || ''),
+    disclaimer: !!data.disclaimer
+  };
+}
+
+async function send(){
   const inp=document.getElementById('inp');
   const txt=inp.value.trim();if(!txt)return;
   const c=gc(aid);if(!c)return;
@@ -336,14 +358,24 @@ function send(){
   save();addBubble('user',userText,false,true);
   inp.value='';
   document.getElementById('cc').textContent='0 / '+MAX;
-  document.getElementById('sb').disabled=true;
+  const sb=document.getElementById('sb');
+  sb.disabled=true;
   renderList();showTyping();
-  setTimeout(()=>{
+  try{
+    const result = await callApi(txt);
     hideTyping();
-    const r=RS[ri%RS.length];ri++;
-    c.msgs.push({r:'ai',t:r.t,d:r.d});save();
-    addBubble('ai',r.t,r.d,true);renderList();
-  },1100+Math.random()*700);
+    c.msgs.push({r:'ai',t:result.text,d:result.disclaimer});save();
+    addBubble('ai',result.text,result.disclaimer,true);renderList();
+  }catch(err){
+    hideTyping();
+    const msg = esc(err.message || 'An error occurred while contacting the server.');
+    c.msgs.push({r:'ai',t:msg,d:false});save();
+    addBubble('ai',msg,false,true);renderList();
+    toast('Error: '+(err.message||'request failed'));
+  }finally{
+    // allow user to type again
+    sb.disabled=false;
+  }
 }
 
 function quickSend(t){ document.getElementById('inp').value=t;onIn();send() }
