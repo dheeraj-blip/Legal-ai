@@ -49,9 +49,7 @@ The Indian Law Query Assistant uses CrewAI's multi-agent architecture to handle 
 legal/
 ├── main.py                  # Entry point (interactive and CLI modes)
 ├── app.py                   # Flask app serving web UI + /api/chat
-├── index.html               # Web chat UI markup (LEX — Legal AI)
-├── style.css                # Web UI styling
-├── app.js                   # Frontend chat logic (calls /api/chat)
+├── style2.html               # Web chat UI markup (LEX — Legal AI)
 ├── agents.py                # Agent definitions for all legal domains
 ├── crew.py                  # CrewAI crew configuration and orchestration + API key failover
 ├── tasks.py                 # Task definitions for each specialist
@@ -99,8 +97,6 @@ legal/
    ```
    OPENAI_API_BASE=https://api.groq.com/openai/v1
    OPENAI_API_KEY=your_primary_key_here
-   OPENAI_API_key=your_backup_key_here
-   GROQ_API_KEY_1=third_fallback_key_here
    OPENAI_MODEL_NAME=llama-3.3-70b-versatile
    CREWAI_TRACING_DISABLED=true
    CREWAI_TELEMETRY_DISABLED=true
@@ -137,7 +133,7 @@ python main.py "What are the fundamental rights under the Indian Constitution?"
 Run the Flask web interface and talk to the assistant in the browser:
 
 ```bash
-python app.py
+waitress-serve --threads=4 --port=5000 app:app
 ```
 
 Then open `http://localhost:5000` and use the LEX UI for a modern, chat-style legal assistant experience.
@@ -189,7 +185,7 @@ Each legal domain has:
 ### Environment Variables
 - `CREWAI_INTERACTIVE_MODE` - Set to "false" for non-interactive execution
 - `CREWAI_DISABLE_TELEMETRY` - Set to "true" to opt-out of telemetry
-- `OPENAI_API_KEY`, `OPENAI_API_key`, `GROQ_API_KEY_1` - API keys for LLM services (the system will automatically rotate between them on failures)
+- `OPENAI_API_KEY` - API key for LLM services (the system will automatically rotate between them on failures)
 
 ### CrewAI Settings
 Agents are configured with:
@@ -304,15 +300,6 @@ python main.py "test query"
 3. **API Key Issues**: Check `.env` file for proper API key configuration
 
 4. **No Results**: Try rephrasing your query with different keywords
-
-## Contributing
-
-Improvements welcome! Consider:
-- Expanding legal domain coverage
-- Adding more law resources
-- Improving search algorithms
-- Enhancing response formatting
-- Adding test cases
 
 
 
