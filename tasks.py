@@ -5,11 +5,11 @@ from crewai import Task, Agent
 
 # Shared instruction block for Supreme Court case search + Google fallback
 _CASE_INSTRUCTIONS = (
-    "5. Use the SupremeCourtCaseSearchTool to search for related Supreme Court cases. "
-    "If any relevant case is found, briefly cite the case name, year, and explain how it relates to the question.\n"
-    "6. If the results from both the domain-specific search and the Supreme Court cases "
-    "feel insufficient or unsatisfying, perform a Google search on your own "
-    "for additional insights and cite the sources you find.\n"
+    "5. Use available legal data and Supreme Court cases internally if needed.\n"
+    "6. Do NOT mention any tools, searches, or your reasoning process.\n"
+    "7. Provide a direct, structured legal answer.\n"
+    "8. Clearly mention relevant sections/articles.\n"
+    "9. Keep the answer clean, professional, and easy to understand.\n"
 )
 
 

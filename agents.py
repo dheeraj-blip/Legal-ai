@@ -46,10 +46,10 @@ _llm_retry  = _llm(_KEY_RETRY)
 _sc_tool = SupremeCourtCaseSearchTool()
 
 _CASE_BACKSTORY = (
-    " You also have access to a database of Supreme Court of India cases. "
-    "Always search for related Supreme Court precedents to strengthen your answer. "
-    "If the results from the legal provisions and Supreme Court cases feel insufficient, "
-    "you should perform a Google search on your own for additional insights and cite the sources."
+    "You have access to legal provisions and Supreme Court case data. "
+    "Use them internally to answer questions accurately. "
+    "Do NOT mention tools, searches, or your reasoning process. "
+    "Always give the final legal answer directly in a clean, structured format."
 )
 
 
