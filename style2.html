@@ -119,6 +119,10 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .msg.user .msg-actions{justify-content:flex-end}
 .ma{background:transparent;border:1px solid var(--border);color:var(--warm-gray);font-size:9px;font-family:'DM Mono',monospace;padding:3px 8px;border-radius:2px;cursor:pointer;letter-spacing:.05em;transition:all .15s}
 .ma:hover{border-color:var(--gold);color:var(--gold)}
+.gen-doc-btn{display:flex;align-items:center;gap:6px;margin-top:10px;padding:8px 14px;background:linear-gradient(135deg,rgba(201,168,76,.12),rgba(201,168,76,.05));border:1px solid var(--gold);color:var(--gold);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;border-radius:3px;cursor:pointer;transition:all .22s;width:fit-content}
+.gen-doc-btn:hover{background:linear-gradient(135deg,rgba(201,168,76,.22),rgba(201,168,76,.12));box-shadow:0 2px 10px rgba(201,168,76,.18);transform:translateY(-1px)}
+.gen-doc-btn:disabled{opacity:.5;cursor:wait;transform:none;box-shadow:none}
+.gen-doc-btn svg{flex-shrink:0}
 
 /* Typing */
 .typing{display:flex;gap:11px;margin-bottom:20px;z-index:1}
@@ -132,12 +136,12 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .ia{padding:10px 20px 12px;background:var(--cream);border-top:1px solid var(--border);flex-shrink:0;box-sizing:border-box;overflow:hidden;width:100%}
 .ia-inner{max-width:660px;margin:0 auto;width:100%}
 /* FIX: background uses var so it darkens in dark mode */
-.ib{display:flex;gap:7px;align-items:center;background:var(--input-bg);border:1px solid var(--border);border-radius:25px;padding:6px 12px;transition:border-color .2s,box-shadow .2s;box-shadow:0 2px 8px var(--shadow)}
+.ib{display:flex;gap:7px;align-items:flex-end;background:var(--input-bg);border:1px solid var(--border);border-radius:16px;padding:8px 12px;transition:border-color .2s,box-shadow .2s;box-shadow:0 2px 8px var(--shadow)}
 .ib:focus-within{border-color:var(--gold);box-shadow:0 2px 16px rgba(201,168,76,.13)}
 
 
-.ii{color:var(--warm-gray);flex-shrink:0}
-#inp{flex:1;border:none;outline:none;background:transparent;font-family:'DM Mono',monospace;font-size:12px;color:var(--input-color);resize:none;line-height:1.4;height:18px;min-height:18px;max-height:18px;overflow:hidden}
+.ii{color:var(--warm-gray);flex-shrink:0;padding-bottom:4px}
+#inp{flex:1;border:none;outline:none;background:transparent;font-family:'DM Mono',monospace;font-size:12px;color:var(--input-color);resize:none;line-height:1.5;min-height:22px;max-height:200px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
 #inp::placeholder{color:#bcb8b2}
 .sb{background:var(--ink);border:none;color:var(--parchment);width:30px;height:30px;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
 .sb:hover{background:var(--gold);color:var(--charcoal)}.sb:active{transform:scale(.93)}.sb:disabled{opacity:.35;cursor:default}
@@ -209,7 +213,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
     <div class="ia-inner">
       <div class="ib">
         <div class="ii"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-        <textarea id="inp" rows="1" placeholder="Describe your legal question…" oninput="onIn()" onkeydown="onKey(event)"></textarea>
+        <textarea id="inp" rows="1" placeholder="Describe your legal question…" oninput="onIn()" onkeydown="onKey(event)" onpaste="setTimeout(()=>onIn(),0)"></textarea>
         <button class="sb" id="sb" onclick="send()" disabled>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
@@ -269,7 +273,7 @@ function loadChat(id){
   const el=document.getElementById('msgs');
   el.innerHTML='';
   if(c.msgs.length===0){ el.innerHTML=wHTML(); }
-  else{ c.msgs.forEach(m=>addBubble(m.r,m.t,m.d,false)); el.scrollTop=el.scrollHeight; }
+  else{ c.msgs.forEach(m=>addBubble(m.r,m.t,m.d,false,m.cat||'')); el.scrollTop=el.scrollHeight; }
   document.querySelectorAll('.ci').forEach(e=>e.classList.toggle('on',e.dataset.id===id));
 }
 
@@ -292,13 +296,17 @@ function wHTML(){
 </div>`;
 }
 
-function addBubble(role,text,disc,animate){
+function addBubble(role,text,disc,animate,category){
   const el=document.getElementById('msgs');
   const now=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
   const d=document.createElement('div');
   d.className=`msg ${role}`;
   if(!animate)d.style.animation='none';
   const copyTxt=text.replace(/<[^>]+>/g,'');
+  const genDocBtn = (role==='ai' && category) ? `<button class="gen-doc-btn" onclick="generateDoc(this,'${category}')">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    Generate Document
+  </button>` : '';
   d.innerHTML=`
     <div class="av">${role==='user'?'You':'L'}</div>
     <div class="mb">
@@ -308,6 +316,7 @@ function addBubble(role,text,disc,animate){
         <button class="ma" onclick="copyText(\`${copyTxt.replace(/`/g,"'")}\`)">Copy</button>
         ${role==='ai'?'<button class="ma" onclick="regen(this)">Regenerate</button>':''}
       </div>
+      ${genDocBtn}
     </div>`;
   el.appendChild(d);
   el.scrollTop=el.scrollHeight;
@@ -341,7 +350,8 @@ async function callApi(question){
   if(data.error) throw new Error(data.error);
   return {
     text: esc(data.response || ''),
-    disclaimer: !!data.disclaimer
+    disclaimer: !!data.disclaimer,
+    category: data.category || ''
   };
 }
 
@@ -353,10 +363,11 @@ async function send(){
   if(w){w.style.transition='opacity .22s,transform .22s';w.style.opacity='0';w.style.transform='translateY(-10px)';setTimeout(()=>w.remove(),230)}
   const toolTags=Object.entries(tools).filter(([,v])=>v).map(([k])=>`<span class="cit">${k==='cl'?'Case Law':k==='st'?'Statute':'Draft Mode'}</span>`).join(' ');
   const userText=esc(txt)+(toolTags?` ${toolTags}`:'');
-  c.msgs.push({r:'user',t:userText,d:false});
+  c.msgs.push({r:'user',t:userText,d:false,cat:''});
   if(c.title==='New Consultation'){ c.title=txt.slice(0,36)+(txt.length>36?'…':''); document.getElementById('chatTitle').textContent=c.title; }
-  save();addBubble('user',userText,false,true);
+  save();addBubble('user',userText,false,true,'');
   inp.value='';
+  inp.style.height='22px';
   document.getElementById('cc').textContent='0 / '+MAX;
   const sb=document.getElementById('sb');
   sb.disabled=true;
@@ -364,13 +375,13 @@ async function send(){
   try{
     const result = await callApi(txt);
     hideTyping();
-    c.msgs.push({r:'ai',t:result.text,d:result.disclaimer});save();
-    addBubble('ai',result.text,result.disclaimer,true);renderList();
+    c.msgs.push({r:'ai',t:result.text,d:result.disclaimer,cat:result.category});save();
+    addBubble('ai',result.text,result.disclaimer,true,result.category);renderList();
   }catch(err){
     hideTyping();
     const msg = esc(err.message || 'An error occurred while contacting the server.');
-    c.msgs.push({r:'ai',t:msg,d:false});save();
-    addBubble('ai',msg,false,true);renderList();
+    c.msgs.push({r:'ai',t:msg,d:false,cat:''});save();
+    addBubble('ai',msg,false,true,'');renderList();
     toast('Error: '+(err.message||'request failed'));
   }finally{
     // allow user to type again
@@ -389,13 +400,58 @@ function regen(btn){
   loadChat(aid);
 }
 
+function autoResize(el){
+  el.style.height='auto';
+  el.style.height=Math.min(el.scrollHeight,200)+'px';
+}
 function onIn(){
   const inp=document.getElementById('inp');
-  // fixed size — no auto-resize
+  autoResize(inp);
   document.getElementById('sb').disabled=inp.value.trim().length===0;
+  document.getElementById('cc').textContent=inp.value.length+' / '+MAX;
+  document.getElementById('cc').classList.toggle('w',inp.value.length>MAX);
 }
 function onKey(e){ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()} }
 function toggleTool(k,bid){ tools[k]=!tools[k];document.getElementById(bid).classList.toggle('on',tools[k]) }
+
+async function generateDoc(btn, category){
+  const c=gc(aid);if(!c)return;
+  // Find the last user query and AI response
+  const userMsgs=c.msgs.filter(m=>m.r==='user');
+  const aiMsgs=c.msgs.filter(m=>m.r==='ai');
+  if(userMsgs.length===0||aiMsgs.length===0){ toast('No conversation to generate from'); return; }
+  const lastQuery=userMsgs[userMsgs.length-1].t.replace(/<[^>]+>/g,'');
+  const lastResponse=aiMsgs[aiMsgs.length-1].t.replace(/<[^>]+>/g,'');
+
+  btn.disabled=true;
+  btn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Generating...';
+  toast('Generating document — this may take a minute...');
+
+  try{
+    const res=await fetch('/api/generate-doc',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({query:lastQuery,response:lastResponse,category:category})
+    });
+    if(!res.ok){
+      let msg='Document generation failed';
+      try{ const d=await res.json(); msg=d.error||msg; }catch(e){}
+      throw new Error(msg);
+    }
+    const blob=await res.blob();
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=`legal_document_${category.toLowerCase()}.pdf`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('✅ Document downloaded!');
+  }catch(err){
+    toast('❌ '+err.message);
+  }finally{
+    btn.disabled=false;
+    btn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Generate Document';
+  }
+}
 function toggleSB(){ sbOn=!sbOn;document.getElementById('sidebar').classList.toggle('off',!sbOn) }
 
 function toggleDarkMode(){

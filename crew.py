@@ -179,60 +179,59 @@ def _run_trademark_law_query(user_query: str) -> str:
     task = create_trademark_law_query_task(agent, user_query)
     return str(Crew(agents=[agent], tasks=[task], process=Process.sequential, verbose=False).kickoff())
 
-def run_query(user_query: str) -> str:
-    """Classify and route a legal query, then return the answer."""
+def _resolve_category(label_upper: str) -> str:
+    """Return the canonical category name from the router label."""
+    ordered = [
+        "IPC", "CPC", "CRPC", "DIVORCE", "ENVIRON", "MARRIAGE", "MVA",
+        "EVIDENCE", "ADMIN", "BANKING", "BANKRUPTCY", "COMPANY_LAW",
+        "COPYRIGHT", "CORPORATE_PRACTICE", "DESIGN", "HUMAN_RIGHTS",
+        "INFORMATION_TECHNOLOGY", "MINIMUM_WAGES", "PATENT", "PROPERTY",
+        "TAX", "TRADEMARK", "CONSTITUTION",
+    ]
+    for cat in ordered:
+        if cat in label_upper:
+            return cat
+    return "CONSTITUTION"
+
+
+def run_query(user_query: str) -> tuple:
+    """Classify and route a legal query, then return (answer, category)."""
     # Step 1 — Classify
     label = _classify_query(user_query)
     label_upper = label.upper()
-    agent_name = "Constitution Agent"
-    
-    if "IPC" in label_upper: agent_name = "IPC Agent"
-    elif "CPC" in label_upper: agent_name = "CPC Agent"
-    elif "CRPC" in label_upper: agent_name = "CrPC Agent"
-    elif "DIVORCE" in label_upper: agent_name = "Divorce Act Agent"
-    elif "ENVIRON" in label_upper: agent_name = "Environment Act Agent"
-    elif "MARRIAGE" in label_upper: agent_name = "Hindu Marriage Act Agent"
-    elif "MVA" in label_upper: agent_name = "MVA Agent"
-    elif "EVIDENCE" in label_upper: agent_name = "Evidence Act Agent"
-    elif "ADMIN" in label_upper: agent_name = "Administrative Law Agent"
-    elif "BANKING" in label_upper: agent_name = "Banking Regulation Agent"
-    elif "BANKRUPTCY" in label_upper: agent_name = "Bankruptcy Law Agent"
-    elif "COMPANY_LAW" in label_upper: agent_name = "Company Law Agent"
-    elif "COPYRIGHT" in label_upper: agent_name = "Copyright Law Agent"
-    elif "CORPORATE_PRACTICE" in label_upper: agent_name = "Corporate Practice Agent"
-    elif "DESIGN" in label_upper: agent_name = "Design Law Agent"
-    elif "HUMAN_RIGHTS" in label_upper: agent_name = "Human Rights Agent"
-    elif "INFORMATION_TECHNOLOGY" in label_upper: agent_name = "IT Law Agent"
-    elif "MINIMUM_WAGES" in label_upper: agent_name = "Minimum Wages Act Agent"
-    elif "PATENT" in label_upper: agent_name = "Patent Law Agent"
-    elif "PROPERTY" in label_upper: agent_name = "Property Law Agent"
-    elif "TAX" in label_upper: agent_name = "Tax Law Agent"
-    elif "TRADEMARK" in label_upper: agent_name = "Trademark Law Agent"
-    elif "CONSTITUTION" in label_upper: agent_name = "Constitution Agent"
-    
+    category = _resolve_category(label_upper)
+
+    _AGENT_NAMES = {
+        "IPC": "IPC Agent", "CPC": "CPC Agent", "CRPC": "CrPC Agent",
+        "DIVORCE": "Divorce Act Agent", "ENVIRON": "Environment Act Agent",
+        "MARRIAGE": "Hindu Marriage Act Agent", "MVA": "MVA Agent",
+        "EVIDENCE": "Evidence Act Agent", "ADMIN": "Administrative Law Agent",
+        "BANKING": "Banking Regulation Agent", "BANKRUPTCY": "Bankruptcy Law Agent",
+        "COMPANY_LAW": "Company Law Agent", "COPYRIGHT": "Copyright Law Agent",
+        "CORPORATE_PRACTICE": "Corporate Practice Agent", "DESIGN": "Design Law Agent",
+        "HUMAN_RIGHTS": "Human Rights Agent", "INFORMATION_TECHNOLOGY": "IT Law Agent",
+        "MINIMUM_WAGES": "Minimum Wages Act Agent", "PATENT": "Patent Law Agent",
+        "PROPERTY": "Property Law Agent", "TAX": "Tax Law Agent",
+        "TRADEMARK": "Trademark Law Agent", "CONSTITUTION": "Constitution Agent",
+    }
+    agent_name = _AGENT_NAMES.get(category, "Constitution Agent")
     print(f"  🔀 Routed to: {agent_name}")
 
     # Step 2 — Delegate to the right specialist
-    if "IPC" in label_upper: return _run_ipc_query(user_query)
-    elif "CPC" in label_upper: return _run_cpc_query(user_query)
-    elif "CRPC" in label_upper: return _run_crpc_query(user_query)
-    elif "DIVORCE" in label_upper: return _run_divorce_query(user_query)
-    elif "ENVIRON" in label_upper: return _run_environ_query(user_query)
-    elif "MARRIAGE" in label_upper: return _run_marriage_query(user_query)
-    elif "MVA" in label_upper: return _run_mva_query(user_query)
-    elif "EVIDENCE" in label_upper: return _run_evidence_query(user_query)
-    elif "ADMIN" in label_upper: return _run_administrative_query(user_query)
-    elif "BANKING" in label_upper: return _run_banking_query(user_query)
-    elif "BANKRUPTCY" in label_upper: return _run_bankruptcy_query(user_query)
-    elif "COMPANY_LAW" in label_upper: return _run_company_law_query(user_query)
-    elif "COPYRIGHT" in label_upper: return _run_copyright_query(user_query)
-    elif "CORPORATE_PRACTICE" in label_upper: return _run_corporate_practice_query(user_query)
-    elif "DESIGN" in label_upper: return _run_design_law_query(user_query)
-    elif "HUMAN_RIGHTS" in label_upper: return _run_human_rights_query(user_query)
-    elif "INFORMATION_TECHNOLOGY" in label_upper: return _run_information_technology_query(user_query)
-    elif "MINIMUM_WAGES" in label_upper: return _run_minimum_wages_query(user_query)
-    elif "PATENT" in label_upper: return _run_patent_query(user_query)
-    elif "PROPERTY" in label_upper: return _run_property_law_query(user_query)
-    elif "TAX" in label_upper: return _run_tax_law_query(user_query)
-    elif "TRADEMARK" in label_upper: return _run_trademark_law_query(user_query)
-    else: return _run_constitution_query(user_query)
+    _RUNNERS = {
+        "IPC": _run_ipc_query, "CPC": _run_cpc_query, "CRPC": _run_crpc_query,
+        "DIVORCE": _run_divorce_query, "ENVIRON": _run_environ_query,
+        "MARRIAGE": _run_marriage_query, "MVA": _run_mva_query,
+        "EVIDENCE": _run_evidence_query, "ADMIN": _run_administrative_query,
+        "BANKING": _run_banking_query, "BANKRUPTCY": _run_bankruptcy_query,
+        "COMPANY_LAW": _run_company_law_query, "COPYRIGHT": _run_copyright_query,
+        "CORPORATE_PRACTICE": _run_corporate_practice_query,
+        "DESIGN": _run_design_law_query, "HUMAN_RIGHTS": _run_human_rights_query,
+        "INFORMATION_TECHNOLOGY": _run_information_technology_query,
+        "MINIMUM_WAGES": _run_minimum_wages_query, "PATENT": _run_patent_query,
+        "PROPERTY": _run_property_law_query, "TAX": _run_tax_law_query,
+        "TRADEMARK": _run_trademark_law_query, "CONSTITUTION": _run_constitution_query,
+    }
+    runner = _RUNNERS.get(category, _run_constitution_query)
+    answer = runner(user_query)
+    return (answer, category)

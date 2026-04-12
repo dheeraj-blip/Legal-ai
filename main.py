@@ -17,6 +17,23 @@ os.environ["CREWAI_INTERACTIVE_MODE"] = "false"
 os.environ["CREWAI_DISABLE_TELEMETRY"] = "true"
 
 from crew import run_query
+from doc_generator import generate_document
+
+
+def _offer_document(query, answer, category):
+    """Ask the user if they want a legal document and generate it."""
+    try:
+        choice = input("\n📄 Generate legal document? (y/n): ").strip().lower()
+    except (KeyboardInterrupt, EOFError):
+        return
+    if choice in ("y", "yes"):
+        try:
+            pdf_path = generate_document(category, query, answer)
+            print(f"\n{'='*60}")
+            print(f"  ✅ Document saved to: {pdf_path}")
+            print(f"{'='*60}\n")
+        except Exception as e:
+            print(f"\n  ❌ Document generation failed: {e}\n")
 
 
 def main():
@@ -26,11 +43,12 @@ def main():
         print(f"\n{'='*60}")
         print(f"  Question: {query}")
         print(f"{'='*60}\n")
-        result = run_query(query)
+        answer, category = run_query(query)
         print(f"\n{'='*60}")
         print("  ANSWER")
         print(f"{'='*60}")
-        print(result)
+        print(answer)
+        _offer_document(query, answer, category)
         return
 
     # Interactive mode
@@ -54,11 +72,12 @@ def main():
             break
 
         print(f"\n🔍 Analyzing your question...\n")
-        result = run_query(query)
+        answer, category = run_query(query)
         print(f"\n{'='*60}")
         print("  ANSWER")
         print(f"{'='*60}")
-        print(result)
+        print(answer)
+        _offer_document(query, answer, category)
         print()
 
 

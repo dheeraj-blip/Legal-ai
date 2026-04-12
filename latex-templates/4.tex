@@ -1,0 +1,189 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[a4paper, top=2.5cm, bottom=2.5cm, left=3cm, right=3cm]{geometry}
+\usepackage{setspace}
+\usepackage{parskip}
+\usepackage{enumitem}
+\usepackage{ulem}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{microtype}
+\usepackage{ragged2e}
+\usepackage{booktabs}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\cfoot{\small Page \thepage\ of \pageref{LastPage}}
+
+\setstretch{1.6}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\justifying
+
+\newcommand{\fillline}[1]{\underline{~#1~}}
+
+\begin{document}
+
+% ── Court & Suit heading ──────────────────────────────────────────────────────
+\begin{center}
+  {\bfseries IN THE COURT OF \fillline{XXFIELDXXCOURT_NAMEXXFIELDXX}}\\[4pt]
+  {\bfseries Original Suit No.\fillline{XXFIELDXXSUIT_NUMBERXXFIELDXX}\ of \fillline{XXFIELDXXSUIT_YEARXXFIELDXX}}\\[6pt]
+  \textbf{SUIT FOR \fillline{XXFIELDXXSUIT_TYPEXXFIELDXX}}\\
+  \textit{(e.g.: PARTITION OF JOINT HINDU FAMILY PROPERTY /
+   DECLARATION OF TITLE / INJUNCTION / RECOVERY OF POSSESSION /
+   LANDLORD--TENANT EVICTION)}
+\end{center}
+
+\vspace{14pt}
+
+% ── Plaintiff(s) ──────────────────────────────────────────────────────────────
+\noindent \fillline{XXFIELDXXPLAINTIFF_1_NAMEXXFIELDXX}\ s/o / d/o / w/o \fillline{XXFIELDXXPLAINTIFF_1_PARENTXXFIELDXX},
+aged \fillline{XXFIELDXXPLAINTIFF_1_AGEXXFIELDXX}\ years, r/o \fillline{XXFIELDXXPLAINTIFF_1_ADDRESSXXFIELDXX}
+\hfill\textbf{Plaintiff}
+
+\vspace{10pt}
+\begin{center}\textbf{Versus}\end{center}
+\vspace{10pt}
+
+% ── Defendant(s) ─────────────────────────────────────────────────────────────
+\noindent \fillline{XXFIELDXXDEFENDANT_1_NAMEXXFIELDXX}\ s/o / d/o / w/o \fillline{XXFIELDXXDEFENDANT_1_PARENTXXFIELDXX},
+aged \fillline{XXFIELDXXDEFENDANT_1_AGEXXFIELDXX}\ years, r/o \fillline{XXFIELDXXDEFENDANT_1_ADDRESSXXFIELDXX}
+\hfill\textbf{Defendant}
+
+\vspace{16pt}
+
+% ── Body heading ──────────────────────────────────────────────────────────────
+\begin{center}
+  \textbf{\uline{PLAINT}}\\[4pt]
+  \textit{(Under Order VII, Rule 1 of the Code of Civil Procedure, 1908 read
+  with the Transfer of Property Act, 1882 / Hindu Succession Act, 1956 /
+  Specific Relief Act, 1963 / relevant statute)}
+\end{center}
+
+The Plaintiff(s) above named most respectfully submit(s) as under:
+
+\vspace{8pt}
+
+\begin{enumerate}[leftmargin=*, label=\arabic{enumi}., itemsep=12pt, topsep=2pt]
+
+  \item That the Plaintiff No.~1, \fillline{XXFIELDXXPLAINTIFF_IDENTITYXXFIELDXX}, is the son/daughter/
+        legal heir of Late \fillline{XXFIELDXXORIGINAL_OWNERXXFIELDXX}, who was the original owner of the suit
+        properties described in the Schedule hereunder. The Plaintiff is a citizen of India and is
+        permanently residing at \fillline{XXFIELDXXPLAINTIFF_RESIDENCEXXFIELDXX}.
+
+  \item That the Defendant No.~1, \fillline{XXFIELDXXDEFENDANT_IDENTITYXXFIELDXX}, is the
+        son/daughter/brother/sister/tenant/purchaser of
+        \fillline{XXFIELDXXDEFENDANT_RELATIONXXFIELDXX}, and is residing at / is in possession of the
+        suit property at \fillline{XXFIELDXXDEFENDANT_PROPERTY_ADDRESSXXFIELDXX}.
+
+  \item That the suit property described in the Schedule below was
+        originally owned / acquired by Late \fillline{XXFIELDXXDECEASED_OWNERXXFIELDXX}\ who died on
+        \fillline{XXFIELDXXDEATH_DATEXXFIELDXX}\ leaving behind the following heirs:
+        \begin{enumerate}[label=(\alph*), itemsep=4pt]
+          \item \fillline{XXFIELDXXHEIR_1_NAMEXXFIELDXX} --- \fillline{XXFIELDXXHEIR_1_RELATIONXXFIELDXX}
+          \item \fillline{XXFIELDXXHEIR_2_NAMEXXFIELDXX} --- \fillline{XXFIELDXXHEIR_2_RELATIONXXFIELDXX}
+          \item \fillline{XXFIELDXXHEIR_3_NAMEXXFIELDXX} --- \fillline{XXFIELDXXHEIR_3_RELATIONXXFIELDXX}
+        \end{enumerate}
+
+  \item That the nature and character of the suit property is as follows:
+        \begin{enumerate}[label=(\alph*), itemsep=4pt]
+          \item The property is \fillline{XXFIELDXXPROPERTY_TYPEXXFIELDXX}
+          \item The property was acquired by way of \fillline{XXFIELDXXACQUISITION_MODEXXFIELDXX}
+          \item The total extent of the property is \fillline{XXFIELDXXPROPERTY_EXTENTXXFIELDXX}
+          \item The approximate market value of the property is Rs.\fillline{XXFIELDXXPROPERTY_VALUEXXFIELDXX}
+        \end{enumerate}
+
+  \item That upon the death of the said \fillline{XXFIELDXXDECEASED_NAMEXXFIELDXX}\ on
+        \fillline{XXFIELDXXDEATH_DATE_2XXFIELDXX}, the interest in the suit properties devolved upon
+        the surviving members of the family.
+
+  \item That the Plaintiff is entitled to \fillline{XXFIELDXXPLAINTIFF_SHAREXXFIELDXX}\ share in the
+        suit properties by virtue of being a legal heir / coparcener / co-owner thereof.
+
+  \item That the Defendant(s) is/are presently in possession of the entire
+        suit property / has/have been wrongfully encroaching upon the
+        Plaintiff's share. XXFIELDXXDEFENDANT_ACTIONSXXFIELDXX
+
+  \item That the Plaintiff requested the Defendants to partition the suit
+        properties amicably and to deliver separate possession on \fillline{XXFIELDXXPARTITION_REQUEST_DATEXXFIELDXX},
+        but the Defendants refused.
+
+  \item That by reason of the wrongful possession, the Plaintiff has been deprived of
+        the income amounting to approximately Rs.\fillline{XXFIELDXXMESNE_PROFITS_MONTHLYXXFIELDXX}\ per
+        month, aggregating to Rs.\fillline{XXFIELDXXMESNE_PROFITS_TOTALXXFIELDXX}.
+
+  \item That the Plaintiff issued a legal notice dated \fillline{XXFIELDXXNOTICE_DATEXXFIELDXX}\ upon
+        the Defendants calling upon them to \fillline{XXFIELDXXNOTICE_DEMANDXXFIELDXX}\ within
+        \fillline{XXFIELDXXNOTICE_DAYSXXFIELDXX}\ days.
+
+  \item That the present suit is within the period of limitation. The cause
+        of action first arose on \fillline{XXFIELDXXCAUSE_OF_ACTION_DATEXXFIELDXX}\ when the Defendants
+        denied / refused to \fillline{XXFIELDXXCAUSE_OF_ACTION_ACTXXFIELDXX}.
+
+  \item That this Honourable Court has jurisdiction to try and decide the
+        present suit. The suit is valued at Rs.\fillline{XXFIELDXXJURISDICTION_VALUEXXFIELDXX}.
+
+  \item That the suit has been valued at Rs.\fillline{XXFIELDXXVALUATION_AMOUNTXXFIELDXX}\ and the requisite court fee
+        of Rs.\fillline{XXFIELDXXCOURT_FEEXXFIELDXX}\ has been affixed on this plaint.
+
+  \item That no previous suit between the same parties in respect of the
+        same subject matter is pending or has been decided by any court
+        of competent jurisdiction.
+
+\end{enumerate}
+
+\vspace{14pt}
+
+% ── PRAYER ────────────────────────────────────────────────────────────────────
+\textbf{PRAYER:}
+
+It is, therefore, most respectfully prayed that this Honourable Court may
+be pleased to:
+
+\begin{enumerate}[leftmargin=*, label=(\alph*), itemsep=6pt, topsep=4pt]
+  \item XXFIELDXXPRAYER_AXXFIELDXX
+  \item XXFIELDXXPRAYER_BXXFIELDXX
+  \item Award the costs of the present suit to the Plaintiff; and
+  \item Pass such other and further orders as this Honourable Court may
+        deem fit and proper in the interest of justice.
+\end{enumerate}
+
+\vspace{20pt}
+
+% ── SIGNATURE BLOCK ───────────────────────────────────────────────────────────
+\noindent
+\begin{tabularx}{\textwidth}{@{}X r@{}}
+  Place: \fillline{XXFIELDXXPLACEXXFIELDXX} & \textbf{Plaintiff(s)} \\[10pt]
+  Date: \fillline{XXFIELDXXDATEXXFIELDXX}  & \fillline{XXFIELDXXPLAINTIFF_SIGNXXFIELDXX} \\
+\end{tabularx}
+
+\vspace{20pt}
+
+% ── VERIFICATION ──────────────────────────────────────────────────────────────
+\textbf{VERIFICATION:}
+
+I/We, \fillline{XXFIELDXXVERIFY_NAMEXXFIELDXX}, the Plaintiff(s) above named, do hereby solemnly
+affirm and verify that the contents of paragraphs 1 to \fillline{XXFIELDXXVERIFY_PARASXXFIELDXX}\ of
+the above plaint are true and correct to my/our personal knowledge.
+
+\vspace{10pt}
+Verified at \fillline{XXFIELDXXVERIFY_PLACEXXFIELDXX}\ on this \fillline{XXFIELDXXVERIFY_DAYXXFIELDXX}\ day of
+\fillline{XXFIELDXXVERIFY_MONTHXXFIELDXX}\ \fillline{XXFIELDXXVERIFY_YEARXXFIELDXX}.
+
+\vspace{18pt}
+\hfill\textbf{Plaintiff(s)}
+
+\vspace{20pt}
+
+% ── COUNSEL BLOCK ─────────────────────────────────────────────────────────────
+\textbf{Filed through:}\\[6pt]
+\fillline{XXFIELDXXADVOCATE_NAMEXXFIELDXX}\\
+\textit{Advocate for the Plaintiff(s)}\\[4pt]
+Address: \fillline{XXFIELDXXADVOCATE_ADDRESSXXFIELDXX}\\[4pt]
+Tel / Mobile: \fillline{XXFIELDXXADVOCATE_PHONEXXFIELDXX}\quad Email: \fillline{XXFIELDXXADVOCATE_EMAILXXFIELDXX}\\[4pt]
+Enrolment No.: \fillline{XXFIELDXXADVOCATE_ENROLMENTXXFIELDXX}
+
+\end{document}
