@@ -53,7 +53,7 @@ _OUTPUT_DIR = os.path.join(_HERE, "generated_docs")
 os.makedirs(_OUTPUT_DIR, exist_ok=True)
 
 # ── LLM setup ────────────────────────────────────────────────────────────────
-_KEY = os.environ.get("GROQ_KEY_RETRY") or os.environ.get("GROQ_KEY_LAWS")
+_KEY = os.environ.get("GROQ_KEY_DOCS") or os.environ.get("GROQ_KEY_RETRY")
 
 
 def _get_llm():

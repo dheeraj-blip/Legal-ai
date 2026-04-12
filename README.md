@@ -1,316 +1,339 @@
-# Indian Law Query Assistant
+# LEX — Indian Law Query Assistant & Document Generator
 
-A powerful AI-driven query system for searching and interpreting Indian legal documents using CrewAI. This assistant leverages multi-agent systems to provide accurate, well-referenced answers across various domains of Indian law.
+A powerful AI-driven legal assistant for searching, interpreting Indian law, and **generating court-ready legal documents** (PDFs). Built with CrewAI's multi-agent architecture, it covers 23+ legal domains with automatic query routing, section-level citations, Supreme Court case references, and automated document generation from 16 LaTeX templates.
 
-## Overview
+## ✨ Key Features
 
-The Indian Law Query Assistant uses CrewAI's multi-agent architecture to handle complex legal queries. A router agent automatically classifies user questions and directs them to the appropriate legal specialist agent, which searches through comprehensive JSON databases of Indian laws and codes.
+- 🏛️ **23+ Legal Domains** — From Constitution to Bankruptcy, all major Indian laws covered
+- 🤖 **Intelligent Query Routing** — Router agent auto-classifies questions to the right specialist
+- 📚 **Comprehensive Legal Database** — Indian legal codes, acts, and 23M+ Supreme Court case data
+- ⚖️ **Section-Level Citations** — Precise article/section references with case law support
+- 📄 **Automated Document Generation** — 16 professional LaTeX templates compiled to PDF
+- 💬 **Interactive CLI** — Terminal-based Q&A with document generation
+- 🌐 **Modern Web Interface** — Rich chat UI with dark mode, auto-expanding input, and PDF download
+- 🔑 **5 Distributed API Keys** — Separate keys for routing, laws, Supreme Court, retry, and docs
 
-**Key Features:**
-- 🏛️ Multi-domain legal expertise (23+ legal areas)
-- 🤖 AI-powered query routing and responses
-- 📚 Comprehensive coverage of Indian legal codes, acts, and Supreme Court cases
-- ⚖️ Accurate section/article-level citations with case-law support
-- 💬 Interactive CLI and rich web chat interface
-- 🌐 Flask-based JSON API for programmatic access
+## Architecture
+
+```
+User Query
+    │
+    ▼
+┌──────────────────┐
+│   Router Agent   │ ← GROQ_KEY_ROUTER
+│  (Classification)│
+└────────┬─────────┘
+         │ Routes to 1 of 23 specialists
+         ▼
+┌──────────────────┐
+│ Specialist Agent │ ← GROQ_KEY_LAWS / GROQ_KEY_SC / GROQ_KEY_RETRY
+│ (IPC/CPC/CrPC…) │
+└────────┬─────────┘
+         │ Returns answer + category
+         ▼
+┌──────────────────┐      ┌──────────────────┐
+│   User chooses   │─Yes─▶│  Doc Generator   │ ← GROQ_KEY_DOCS
+│  "Generate Doc"  │      │ (JSON → LaTeX →  │
+└──────────────────┘      │   pdflatex → PDF)│
+                          └──────────────────┘
+```
+
+### Document Generation Pipeline
+
+```
+Template (*.tex)  →  Extract XXFIELDXX placeholders
+                            │
+User Query + AI Response  → LLM extracts field values as JSON
+                            │
+Python str.replace()      → Filled LaTeX source
+                            │
+pdflatex (MiKTeX)         → Final PDF
+```
+
+> **Key design**: The LLM **never touches LaTeX syntax**. It only outputs a JSON dict of field values. Python does the mechanical replacement, preventing template corruption.
 
 ## Legal Domains Covered
 
-| Domain | JSON File | Coverage |
-|--------|-----------|----------|
-| Indian Constitution | `const.json` | Constitutional articles and provisions |
-| Indian Penal Code | `ipc.json` | Criminal offenses and penalties |
-| Civil Procedure Code | `cpc.json` | Civil litigation procedures |
-| Criminal Procedure Code | `crpc.json` | Criminal procedures |
-| Divorce Law | `div.json` | Marriage dissolution and related matters |
-| Environmental Law | `environ.json` | Environmental protection regulations |
-| Marriage Law | `mar.json` | Marriage rights and regulations |
-| Motor Vehicle Act | `mva.json` | Vehicle-related regulations |
-| Evidence Act | `evid.json` | Rules of evidence in legal proceedings |
-| Administrative Law | `adm.json` | Administrative procedures |
-| Banking Regulation | `banking.json` | Banking sector regulations |
-| Bankruptcy Law | `bankruptcy.json` | Insolvency and bankruptcy proceedings |
-| Company Law | `cl.json` | Corporate governance and regulations |
-| Copyright Law | `Copyright.json` | Intellectual property - copyrights |
-| Corporate Practice | `cpc.json` | Corporate legal practices |
-| Design Law | `design.json` | Design protection and registration |
-| Human Rights | `human_rights.json` | Fundamental rights and protections |
-| Information Technology | `it.json` | IT regulations and cyber laws |
-| Minimum Wages Act | `MinimumWagesact.json` | Wage protection regulations |
-| Patent Law | `patent.json` | Intellectual property - patents |
-| Property Law | `prop.json` | Real and personal property rights |
-| Tax Law | `tax.json` | Income tax and taxation regulations |
-| Trademark Law | `trademarks.json` | Trademark protection and registration |
-| Supreme Court Cases | `supreme_court_cases.json` | Summaries of landmark Supreme Court of India judgments |
+| Domain | Agent | JSON Data | Template |
+|--------|-------|-----------|----------|
+| Indian Constitution | Constitution Agent | `const.json` | `8.tex` (Child Custody) |
+| Indian Penal Code (IPC) | IPC Agent | `ipc.json` | `1.tex` (Bail Petition) |
+| Civil Procedure Code (CPC) | CPC Agent | `cpc.json` | `2.tex` (Civil Suit Plaint) |
+| Criminal Procedure Code (CrPC) | CrPC Agent | `crpc.json` | `0.tex` (Anticipatory Bail) |
+| Divorce Law | Divorce Agent | `div.json` | `6.tex` (Divorce Petition) |
+| Environmental Law | Environment Agent | `environ.json` | `2.tex` (General Plaint) |
+| Marriage Law | Marriage Agent | `mar.json` | `7.tex` (Maintenance u/s 125) |
+| Motor Vehicle Act | MVA Agent | `mva.json` | `10.tex` (Accident Claim) |
+| Evidence Act | Evidence Agent | `evid.json` | `3.tex` (FIR Proforma) |
+| Administrative Law | Administrative Agent | `adm.json` | `2.tex` (General Plaint) |
+| Banking Regulation | Banking Agent | `banking.json` | `9.tex` (Consumer Complaint) |
+| Bankruptcy/Insolvency | Bankruptcy Agent | `bankruptcy.json` | `13.tex` (IBC Application) |
+| Company Law | Company Law Agent | `cl.json` | `12.tex` (Mismanagement) |
+| Copyright Law | Copyright Agent | `Copyright.json` | `14.tex` (IP Infringement) |
+| Corporate Practice | Corporate Agent | `cpc.json` | `5.tex` (Breach of Contract) |
+| Design Law | Design Agent | `design.json` | `14.tex` (IP Infringement) |
+| Human Rights | Human Rights Agent | `human_rights.json` | `15.tex` (Writ Petition) |
+| Information Technology | IT Agent | `it.json` | `2.tex` (General Plaint) |
+| Minimum Wages Act | Min. Wages Agent | `MinimumWagesact.json` | `11.tex` (Labour Complaint) |
+| Patent Law | Patent Agent | `patent.json` | `14.tex` (IP Infringement) |
+| Property Law | Property Agent | `prop.json` | `4.tex` (Partition Suit) |
+| Tax Law | Tax Agent | `tax.json` | `2.tex` (General Plaint) |
+| Trademark Law | Trademark Agent | `trademarks.json` | `14.tex` (IP Infringement) |
+| Supreme Court Cases | SC Search Tool | `supreme_court_cases.json` | — |
 
 ## Project Structure
 
 ```
-legal/
-├── main.py                  # Entry point (interactive and CLI modes)
-├── app.py                   # Flask app serving web UI + /api/chat
-├── style2.html               # Web chat UI markup (LEX — Legal AI)
-├── agents.py                # Agent definitions for all legal domains
-├── crew.py                  # CrewAI crew configuration and orchestration + API key failover
-├── tasks.py                 # Task definitions for each specialist
-├── tools.py                 # Custom search tools for each legal domain
-├── supreme_court_cases.json # Supreme Court of India case summaries
-├── legal-data-extractor/    # Scripts to build/update the case-law dataset
-├── pyproject.toml           # Project metadata and dependencies
-├── requirements.txt         # Python package requirements
-├── *.json                   # Legal data files (constitution, codes, acts)
-└── .env                     # Environment configuration (not tracked)
+Legal/
+├── main.py                     # CLI entry point (interactive + single-query)
+├── app.py                      # Flask web server (API + UI)
+├── style2.html                 # Web chat UI (LEX — Legal AI)
+├── crew.py                     # CrewAI crew config, routing, key distribution
+├── agents.py                   # 23+ agent definitions
+├── tasks.py                    # Task definitions for each specialist
+├── tools.py                    # Custom JSON search tools per domain
+│
+├── doc_generator.py            # Document generation engine
+│   ├── Template reading        #   Reads .tex files
+│   ├── Placeholder extraction  #   Finds XXFIELDXX markers
+│   ├── LLM JSON extraction     #   Gets field values from AI
+│   ├── LaTeX escaping          #   Sanitizes special characters
+│   └── PDF compilation         #   Runs pdflatex (MiKTeX)
+│
+├── latex-templates/            # 16 LaTeX document templates
+│   ├── 0.tex                   #   CrPC Anticipatory Bail Application
+│   ├── 1.tex                   #   IPC Bail Petition
+│   ├── 2.tex                   #   CPC Civil Suit Plaint
+│   ├── 3.tex                   #   FIR Proforma (Evidence Act)
+│   ├── 4.tex                   #   Property Partition Suit
+│   ├── 5.tex                   #   Breach of Contract Suit
+│   ├── 6.tex                   #   Divorce Petition (Hindu Marriage Act)
+│   ├── 7.tex                   #   Maintenance Application (u/s 125 CrPC)
+│   ├── 8.tex                   #   Child Custody Petition
+│   ├── 9.tex                   #   Consumer Complaint (Banking)
+│   ├── 10.tex                  #   Motor Accident Compensation (MACT)
+│   ├── 11.tex                  #   Labour / Minimum Wages Complaint
+│   ├── 12.tex                  #   Corporate Mismanagement (Companies Act)
+│   ├── 13.tex                  #   Insolvency Application (IBC 2016)
+│   ├── 14.tex                  #   IP Infringement (TM/Patent/Copyright)
+│   └── 15.tex                  #   Human Rights / Writ Petition
+│
+├── generated_docs/             # Output folder for generated PDFs
+├── legal-data-extractor/       # Scripts to build/update SC case dataset
+│
+├── *.json                      # Legal data files (23 JSON databases)
+├── supreme_court_cases.json    # 23MB Supreme Court case summaries
+├── .env                        # API keys (not tracked in git)
+├── pyproject.toml              # Project metadata and dependencies
+├── requirements.txt            # Python package requirements
+└── .gitignore
 ```
 
 ## Installation
 
-### Requirements
-- Python 3.10 or higher
-- pip or uv package manager
+### Prerequisites
+
+- **Python 3.10+**
+- **MiKTeX** (for `pdflatex` — required for document generation)
+  - Download: https://miktex.org/download
+  - During install, enable "Install missing packages on-the-fly"
+- **pip** or **uv** package manager
 
 ### Setup
 
-1. **Clone or navigate to the project directory:**
+1. **Clone the repository:**
    ```bash
-   cd ~/Desktop/Legal
+   git clone https://github.com/dheeraj-blip/Legal-ai.git
+   cd Legal-ai
    ```
 
-2. **Create a virtual environment (optional but recommended):**
+2. **Create a virtual environment:**
    ```bash
    python -m venv .venv
-   .venv\Scripts\activate  # On Windows
+   .venv\Scripts\activate      # Windows
+   # source .venv/bin/activate  # Linux/Mac
    ```
 
 3. **Install dependencies:**
    ```bash
    pip install -r requirements.txt
    ```
-
    Or using uv:
    ```bash
-   uv pip install -r requirements.txt
+   uv sync
    ```
 
-4. **Configure environment variables:**
-   Create a `.env` file with necessary API keys (if using external LLM services).  
-   The assistant supports **automatic failover across up to 3 keys**, so you can paste multiple keys for reliability:
-   ```
+4. **Configure API keys** — Create a `.env` file:
+   ```env
    OPENAI_API_BASE=https://api.groq.com/openai/v1
-   OPENAI_API_KEY=your_primary_key_here
    OPENAI_MODEL_NAME=llama-3.3-70b-versatile
+
+   # 5 separate Groq API keys to distribute load
+   GROQ_KEY_ROUTER=gsk_your_router_key_here
+   GROQ_KEY_LAWS=gsk_your_laws_key_here
+   GROQ_KEY_SC=gsk_your_supreme_court_key_here
+   GROQ_KEY_RETRY=gsk_your_retry_key_here
+   GROQ_KEY_DOCS=gsk_your_docs_key_here
+
    CREWAI_TRACING_DISABLED=true
    CREWAI_TELEMETRY_DISABLED=true
    ```
 
+### API Key Distribution
+
+| Key | Used By | Purpose |
+|-----|---------|---------|
+| `GROQ_KEY_ROUTER` | Router Agent | Query classification |
+| `GROQ_KEY_LAWS` | Law Specialist Agents | Legal Q&A responses |
+| `GROQ_KEY_SC` | Supreme Court Tool | Case law search |
+| `GROQ_KEY_RETRY` | Failover / backup | Retry on rate limits |
+| `GROQ_KEY_DOCS` | Document Generator | Extracting JSON field data for templates |
+
 ## Usage
 
-### Interactive Mode (CLI)
-
-Run the assistant in interactive mode to ask multiple questions:
+### CLI — Interactive Mode
 
 ```bash
 python main.py
+# or
+uv run python main.py
 ```
 
-This launches an interactive CLI where you can enter questions continuously. Type `quit` or `exit` to exit.
-
-### Single Query Mode (CLI)
-
-Ask a single question directly from the command line:
-
-```bash
-python main.py "What are the fundamental rights under the Indian Constitution?"
+Ask questions continuously. After each AI response, you'll be prompted:
+```
+📄 Generate legal document? (y/n): y
+✅ Document saved to: generated_docs/legal_doc_abc123.pdf
 ```
 
-### Available Commands
-
-- **Interactive**: `python main.py` - Start interactive mode
-- **Single Query**: `python main.py "your question"` - Direct query
-- **Start Script**: `start` - Uses the entry point defined in pyproject.toml
-
-### Web Chat Interface
-
-Run the Flask web interface and talk to the assistant in the browser:
+### CLI — Single Query
 
 ```bash
+python main.py "What is the punishment for theft under IPC?"
+```
+
+### Web Interface
+
+```bash
+# Development
+python app.py
+
+# Production
 waitress-serve --threads=4 --port=5000 app:app
 ```
 
-Then open `http://localhost:5000` and use the LEX UI for a modern, chat-style legal assistant experience.
+Open `http://localhost:5000` — use the LEX chat UI. After each AI response, click **"Generate Document"** to download the PDF.
 
-## How It Works
+## Example Prompts
 
-### Architecture
+### Quick Questions (no document needed)
+```
+What are the Fundamental Rights under the Indian Constitution?
+What constitutes an offense under Section 420 IPC?
+How do I register a trademark in India?
+What is the minimum wage in Delhi for semi-skilled workers?
+```
 
-1. **Query Input**: User submits a legal question
-2. **Router Agent**: Classifies the query into appropriate legal domain(s)
-3. **Specialist Agents**: Selected agents search their respective legal databases
-4. **Search Tools**: Custom tools perform keyword matching against JSON data
-5. **Response Generation**: Agents synthesize findings with citations
-6. **Output**: Formatted response with article/section references
+### Document-Ready Prompts (include all details for PDF generation)
+```
+I need to file an anticipatory bail application. Petitioner: Rajesh Kumar Singh,
+son of Late Shri Mahendra Singh, resident of 45-B, Sector 22, Dwarka, New Delhi
+- 110075. FIR Number is 245/2026, PS Cr. No. 112/2026, registered at Hauz Khas
+Police Station, New Delhi. Respondent: State of NCT of Delhi through SHO, Police
+Station Hauz Khas. The alleged offence is under Section 420 (Cheating) of the
+Indian Penal Code. My advocate is Mr. Sanjay Mehta, Bar Council enrollment
+D/1234/2015. Today's date is 12th April 2026. Verification at New Delhi.
+```
 
-### Agent Types
+> **Tip**: The more specific details (names, dates, addresses, amounts) you include in your prompt, the more complete the generated PDF will be.
 
-- **Router Agent**: Determines which legal domain(s) the query relates to
-- **Specialist Agents**: Expert agents for each legal domain (23+ agents)
-  - Constitution Expert
-  - IPC Expert
-  - CPC Expert
-  - CRPC Expert
-  - Divorce Law Expert
-  - And 18+ more domain specialists
+## API Endpoints
 
-### Search Mechanism
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/` | Serves the web chat UI |
+| `POST` | `/api/chat` | Send a legal query, get AI response + category |
+| `POST` | `/api/generate-doc` | Generate PDF from query + response + category |
 
-Each legal domain has:
-- A JSON file with structured legal information
-- A custom `SearchTool` class that performs keyword-based search
-- Caching mechanism for performance optimization
+### POST `/api/chat`
+```json
+{ "query": "What is Section 420 IPC?" }
+```
+Response:
+```json
+{
+  "response": "Section 420 of the IPC deals with cheating...",
+  "category": "IPC",
+  "disclaimer": true
+}
+```
+
+### POST `/api/generate-doc`
+```json
+{
+  "query": "I need a bail petition...",
+  "response": "Based on the details provided...",
+  "category": "CRPC"
+}
+```
+Response: PDF file download
 
 ## Dependencies
 
 ### Core
-- **crewai** - Multi-agent framework
-- **crewai-tools** - Pre-built tools for CrewAI
+- **crewai** — Multi-agent orchestration framework
+- **crewai-tools** — Pre-built tools for CrewAI
 
-### Web Server (Optional)
-- **flask** >= 3.1.3 - Web framework
-- **flask-cors** >= 6.0.2 - Cross-origin resource sharing
+### Web
+- **flask** >= 3.1.3 — Web framework
+- **flask-cors** >= 6.0.2 — CORS support
+- **waitress** — Production WSGI server
+
+### Document Generation
+- **MiKTeX** (external) — LaTeX distribution with `pdflatex`
 
 ### Utilities
-- **python-dotenv** - Environment variable management
+- **python-dotenv** — Environment variable management
 
-## Configuration
+## Troubleshooting
 
-### Environment Variables
-- `CREWAI_INTERACTIVE_MODE` - Set to "false" for non-interactive execution
-- `CREWAI_DISABLE_TELEMETRY` - Set to "true" to opt-out of telemetry
-- `OPENAI_API_KEY` - API key for LLM services (the system will automatically rotate between them on failures)
-
-### CrewAI Settings
-Agents are configured with:
-- `max_iter=3` - Maximum iterations per agent
-- `verbose=False` - Suppress verbose output
-- Custom backstories and goals
-- Automatic API-key failover at the crew level for more robust inference
-
-## Example Queries
-
-```bash
-# Constitutional questions
-python main.py "What are the Fundamental Rights in India?"
-python main.py "Explain Article 14 of the Indian Constitution"
-
-# Criminal law questions
-python main.py "What is the punishment for theft under IPC?"
-python main.py "What constitutes an offense under Section 420 IPC?"
-
-# Civil matters
-python main.py "What is the procedure for filing a divorce?"
-python main.py "Explain the grounds for divorce under Indian law"
-
-# IP and commerce
-python main.py "How do I register a trademark in India?"
-python main.py "What are the copyright protections available?"
-
-# Labor and employment
-python main.py "What is the minimum wage in India?"
-```
-
-## API Reference
-
-### Main Entry Point
-- `main()` - Handles CLI argument parsing and mode selection
-
-### Crew Functions (crew.py)
-- `run_query(user_query: str) -> str` - Process a query and return response
-
-### Agent Creation (agents.py)
-Each agent follows the pattern: `create_[domain]_agent() -> Agent`
-
-Examples:
-- `create_constitution_agent()`
-- `create_ipc_agent()`
-- `create_router_agent()`
-
-### Task Creation (tasks.py)
-Each task follows the pattern: `create_[domain]_query_task(agent, query) -> Task`
-
-### Search Tools (tools.py)
-Each domain has a corresponding search tool:
-- `ConstitutionSearchTool`
-- `IPCSearchTool`
-- `CPCSearchTool`
-- And 20+ more search tools
-
-## Output Format
-
-Responses include:
-- Direct answers to legal questions
-- Specific article/section numbers and citations
-- Relevant legal context and explanations
-- Clear, accessible language
-
-Example:
-```
-=============================================================
-  Question: What does Article 14 of the Constitution say?
-=============================================================
-
-  ANSWER
-=============================================================
-Article 14 establishes the principle of equality before the law...
-[Cited Article 14 - Equality before law]
-```
+| Issue | Solution |
+|-------|----------|
+| `ModuleNotFoundError` | Run `pip install -r requirements.txt` |
+| `pdflatex not found` | Install MiKTeX and add to PATH |
+| `GROQ API key not found` | Check `.env` file has `GROQ_KEY_DOCS` set |
+| `Rate limit exceeded` | Use separate API keys per component |
+| `Template not found` | Ensure `latex-templates/` directory exists with `.tex` files |
+| `Missing packages` in LaTeX | Run MiKTeX Console → Tasks → Refresh FNDB, then recompile |
+| Input box not expanding | Clear browser cache, refresh `localhost:5000` |
 
 ## Development
 
 ### Adding a New Legal Domain
 
-1. Create a new JSON file with legal data (e.g., `newtopic.json`)
+1. Create a JSON file with legal data (e.g., `newtopic.json`)
 2. Create a search tool in `tools.py` (e.g., `NewTopicSearchTool`)
 3. Create an agent in `agents.py` (e.g., `create_new_topic_agent()`)
 4. Create a task in `tasks.py` (e.g., `create_new_topic_query_task()`)
-5. Add to router logic in `crew.py`
+5. Add routing in `crew.py` (`_resolve_category` + `_RUNNERS` dict)
 
-### Testing
+### Adding a New Document Template
 
-Run specific queries to validate functionality:
-```bash
-python main.py "test query"
+1. Create a `.tex` file in `latex-templates/` with `XXFIELDXX` placeholders
+2. Map the category to the template in `doc_generator.py` → `CASE_TEMPLATE_MAP`
+3. Test compilation: replace all placeholders with "Sample Text" and run `pdflatex`
+
+### Placeholder Format
+
+Templates use `XXFIELDXX` delimiters (not `{{}}` or `<<>>` which conflict with LaTeX):
+```latex
+\fillline{XXFIELDXXCOURT_NAMEXXFIELDXX}
 ```
-
-## Performance Considerations
-
-- **Caching**: Search tools cache JSON data in memory for performance
-- **Agent Iterations**: Limited to 3 iterations per agent to control execution time
-- **Telemetry**: Disabled by default to reduce overhead
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Module Import Error**: Ensure all dependencies are installed
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. **JSON File Not Found**: Verify JSON files are in the project directory
-
-3. **API Key Issues**: Check `.env` file for proper API key configuration
-
-4. **No Results**: Try rephrasing your query with different keywords
-
-
-
-## Support
-
-For questions or issues about this project, please refer to the inline code documentation.
+The Python generator extracts field names via regex, sends them to the LLM, gets JSON back, and does `str.replace()`.
 
 ---
 
-**Last Updated**: March 2026
+**Last Updated**: April 2026
 
-**Technology Stack**: Python 3.10+, CrewAI, Flask, JSON
+**Technology Stack**: Python 3.10+ · CrewAI · Flask · LaTeX (MiKTeX) · Groq LLM (Llama 3.3 70B)
 
 **Status**: Active Development
