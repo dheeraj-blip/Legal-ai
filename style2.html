@@ -152,6 +152,18 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .cc{font-size:9px;color:#b0aca6;text-align:right;margin-top:4px;letter-spacing:.04em}.cc.w{color:var(--rust)}
 .hint{font-size:9px;color:#bbb8b2;letter-spacing:.03em}.hint kbd{border:1px solid var(--border);border-radius:2px;padding:1px 4px;font-family:'DM Mono',monospace;background:var(--parchment)}
 
+/* Translate dropdown */
+.tr-wrap{position:relative;display:inline-block}
+.tr-btn{background:transparent;border:1px solid var(--border);color:var(--warm-gray);font-size:9px;font-family:'DM Mono',monospace;padding:3px 8px;border-radius:2px;cursor:pointer;letter-spacing:.05em;transition:all .15s;display:flex;align-items:center;gap:4px}
+.tr-btn:hover{border-color:var(--gold);color:var(--gold)}
+.tr-btn.loading{opacity:.5;cursor:wait}
+.tr-menu{display:none;position:absolute;bottom:100%;left:0;margin-bottom:4px;background:var(--cream);border:1px solid var(--border);border-radius:4px;box-shadow:0 4px 16px var(--shadow);min-width:160px;max-height:260px;overflow-y:auto;z-index:50;scrollbar-width:thin}
+[data-theme="dark"] .tr-menu{background:#2a2520}
+.tr-menu.open{display:block}
+.tr-menu button{display:block;width:100%;text-align:left;background:none;border:none;padding:7px 12px;font-family:'DM Mono',monospace;font-size:11px;color:var(--ink);cursor:pointer;transition:background .12s;letter-spacing:.03em}
+.tr-menu button:hover{background:rgba(201,168,76,.12);color:var(--gold)}
+.tr-menu button:first-child{border-radius:4px 4px 0 0}.tr-menu button:last-child{border-radius:0 0 4px 4px}
+
 /* Toast */
 .toast{position:fixed;bottom:86px;right:28px;background:var(--charcoal);color:var(--gold);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.07em;padding:8px 15px;border-radius:3px;border:1px solid #4a4744;opacity:0;transform:translateY(8px);transition:all .22s;pointer-events:none;z-index:100}
 .toast.on{opacity:1;transform:translateY(0)}
@@ -307,6 +319,26 @@ function addBubble(role,text,disc,animate,category){
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
     Generate Document
   </button>` : '';
+  const trBtn = role==='ai' ? `<div class="tr-wrap">
+        <button class="tr-btn" onclick="toggleTrMenu(this)">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l6 10l4-6l5 6"/><path d="M2 4h6M5 2v4M3.5 14l2-2l2 2"/><path d="M13 2l5 12M16.5 8H22"/></svg>
+          Translate
+        </button>
+        <div class="tr-menu">
+          <button onclick="translateBubble(this,'en')">🇬🇧 English</button>
+          <button onclick="translateBubble(this,'hi')">🇮🇳 हिन्दी (Hindi)</button>
+          <button onclick="translateBubble(this,'te')">తెలుగు (Telugu)</button>
+          <button onclick="translateBubble(this,'ta')">தமிழ் (Tamil)</button>
+          <button onclick="translateBubble(this,'kn')">ಕನ್ನಡ (Kannada)</button>
+          <button onclick="translateBubble(this,'ml')">മലയാളം (Malayalam)</button>
+          <button onclick="translateBubble(this,'bn')">বাংলা (Bengali)</button>
+          <button onclick="translateBubble(this,'mr')">मराठी (Marathi)</button>
+          <button onclick="translateBubble(this,'gu')">ગુજરાતી (Gujarati)</button>
+          <button onclick="translateBubble(this,'pa')">ਪੰਜਾਬੀ (Punjabi)</button>
+          <button onclick="translateBubble(this,'or')">ଓଡ଼ିଆ (Odia)</button>
+          <button onclick="translateBubble(this,'ur')">اردو (Urdu)</button>
+        </div>
+      </div>` : '';
   d.innerHTML=`
     <div class="av">${role==='user'?'You':'L'}</div>
     <div class="mb">
@@ -315,6 +347,7 @@ function addBubble(role,text,disc,animate,category){
       <div class="msg-actions">
         <button class="ma" onclick="copyText(\`${copyTxt.replace(/`/g,"'")}\`)">Copy</button>
         ${role==='ai'?'<button class="ma" onclick="regen(this)">Regenerate</button>':''}
+        ${trBtn}
       </div>
       ${genDocBtn}
     </div>`;
@@ -413,6 +446,67 @@ function onIn(){
 }
 function onKey(e){ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()} }
 function toggleTool(k,bid){ tools[k]=!tools[k];document.getElementById(bid).classList.toggle('on',tools[k]) }
+
+function toggleTrMenu(btn){
+  const menu=btn.nextElementSibling;
+  // close any other open menus first
+  document.querySelectorAll('.tr-menu.open').forEach(m=>{if(m!==menu)m.classList.remove('open')});
+  menu.classList.toggle('open');
+}
+// close translate menu when clicking outside
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.tr-wrap'))document.querySelectorAll('.tr-menu.open').forEach(m=>m.classList.remove('open'));
+});
+
+async function translateBubble(langBtn,targetLang){
+  const wrap=langBtn.closest('.tr-wrap');
+  const trBtn=wrap.querySelector('.tr-btn');
+  const menu=wrap.querySelector('.tr-menu');
+  const bbl=wrap.closest('.mb').querySelector('.bbl');
+  menu.classList.remove('open');
+
+  // Save original English text on first use
+  if(!bbl.dataset.originalHtml){
+    const disc=bbl.querySelector('.disc');
+    const discHTML=disc?disc.outerHTML:'';
+    // Store everything except the disclaimer
+    const contentNodes=Array.from(bbl.childNodes).filter(n=>n!==disc);
+    const originalHTML=contentNodes.map(n=>n.nodeType===1?n.outerHTML:n.textContent).join('');
+    bbl.dataset.originalHtml=originalHTML;
+    bbl.dataset.originalText=contentNodes.map(n=>n.textContent).join('').trim();
+    bbl.dataset.discHtml=discHTML;
+  }
+
+  // If English selected, restore original — no API call
+  if(targetLang==='en'){
+    bbl.innerHTML=bbl.dataset.originalHtml+(bbl.dataset.discHtml||'');
+    toast('Restored to English');
+    return;
+  }
+
+  // Always translate from the stored English text
+  const rawText=bbl.dataset.originalText;
+  if(!rawText)return;
+
+  trBtn.classList.add('loading');
+  trBtn.innerHTML='⏳ Translating...';
+  try{
+    const res=await fetch('/api/translate',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({text:rawText,target:targetLang})
+    });
+    const data=await res.json();
+    if(data.error)throw new Error(data.error);
+    bbl.innerHTML=esc(data.translated)+(bbl.dataset.discHtml||'');
+    toast('Translated!');
+  }catch(err){
+    toast('❌ '+err.message);
+  }finally{
+    trBtn.classList.remove('loading');
+    trBtn.innerHTML='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l6 10l4-6l5 6"/><path d="M2 4h6M5 2v4M3.5 14l2-2l2 2"/><path d="M13 2l5 12M16.5 8H22"/></svg> Translate';
+  }
+}
 
 async function generateDoc(btn, category){
   const c=gc(aid);if(!c)return;

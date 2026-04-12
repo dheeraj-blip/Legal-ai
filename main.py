@@ -12,6 +12,7 @@ Usage:
 import sys
 import os
 import logging
+
 logging.getLogger("crewai").setLevel(logging.ERROR)
 os.environ["CREWAI_INTERACTIVE_MODE"] = "false"
 os.environ["CREWAI_DISABLE_TELEMETRY"] = "true"
@@ -19,6 +20,7 @@ os.environ["CREWAI_DISABLE_TELEMETRY"] = "true"
 from crew import run_query
 from doc_generator import generate_document
 
+# ── Document generation ──────────────────────────────────────────────────────
 
 def _offer_document(query, answer, category):
     """Ask the user if they want a legal document and generate it."""
@@ -35,6 +37,8 @@ def _offer_document(query, answer, category):
         except Exception as e:
             print(f"\n  ❌ Document generation failed: {e}\n")
 
+
+# ── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
     # Single query from command line
@@ -53,14 +57,13 @@ def main():
 
     # Interactive mode
     print("\n" + "=" * 80)
-    print("  🏛️  Indian Law Query Assistant")
+    print("  Indian Law Query Assistant")
     print("=" * 80)
-    print("\n  Available Legal Domains:")
-    print("\n  Ask about any of these legal areas. Type 'quit' or 'exit' to stop.\n")
+    print("\n  Ask about any legal area. Type 'quit' or 'exit' to stop.\n")
 
     while True:
         try:
-            query = input("⚖️  Your question: ").strip()
+            query = input("  Your question: ").strip()
         except (KeyboardInterrupt, EOFError):
             print("\nGoodbye!")
             break
@@ -71,7 +74,7 @@ def main():
             print("Goodbye!")
             break
 
-        print(f"\n🔍 Analyzing your question...\n")
+        print(f"\n  Analyzing your question...\n")
         answer, category = run_query(query)
         print(f"\n{'='*60}")
         print("  ANSWER")

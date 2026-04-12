@@ -10,12 +10,17 @@ Run (production - Windows):
 
 import os
 import sys
+import json
 import traceback
 from functools import lru_cache
+from dotenv import load_dotenv
 from flask import Flask, request, jsonify, send_from_directory, send_file
 
 # Ensure path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# ✅ Load .env BEFORE importing crew/agents (they read keys at import time)
+load_dotenv()
 
 # ✅ Load CrewAI ONCE
 from crew import run_query
@@ -87,6 +92,28 @@ def generate_doc():
         return jsonify({
             "error": f"Document generation failed: {str(e)}"
         }), 500
+
+
+
+@app.route("/api/translate", methods=["POST"])
+def translate():
+    """Translate text using translatepy (auto-rotates free services, no AI)."""
+    data = request.get_json(force=True)
+    text = (data.get("text") or "").strip()
+    target = (data.get("target") or "hi").strip()
+
+    if not text:
+        return jsonify({"error": "No text to translate"}), 400
+
+    try:
+        from translatepy import Translator
+        translator = Translator()
+        result = translator.translate(text, destination_language=target, source_language="en")
+        return jsonify({"translated": str(result), "target": target})
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": f"Translation failed: {str(e)}"}), 500
 
 
 if __name__ == "__main__":
